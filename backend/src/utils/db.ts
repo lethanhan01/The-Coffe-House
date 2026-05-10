@@ -1,17 +1,16 @@
-import mysql from 'mysql2/promise';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Tạo kết nối đến database MySQL
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'doko_cafe', // Khớp với tên DB trong file dokodatabase.sql
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-export default pool;
+if (!supabaseUrl || !supabaseKey) {
+    console.warn("⚠️ Warning: SUPABASE_URL or SUPABASE_ANON_KEY is missing in environment variables.");
+}
+
+// Tạo kết nối đến database Supabase
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default supabase;

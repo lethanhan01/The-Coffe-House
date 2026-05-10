@@ -1,20 +1,16 @@
-CREATE DATABASE IF NOT EXISTS doko_cafe
-CHARACTER SET utf8mb4 
-COLLATE utf8mb4_unicode_ci;
-
-USE doko_cafe;
+-- Supabase / PostgreSQL Schema
 
 CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL, 
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, 
     avatar_url TEXT, 
     role_id INT NOT NULL CHECK (role_id IN (1, 2, 3, 4)) 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS cafes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     owner_id INT NOT NULL,
     name_jp VARCHAR(255) NOT NULL, 
     name_vn VARCHAR(255) NOT NULL, 
@@ -27,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cafes (
     review_count INT DEFAULT 0,
     cover_image_url TEXT,          
     CONSTRAINT fk_cafe_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS amenities (
     cafe_id INT PRIMARY KEY,
@@ -39,37 +35,35 @@ CREATE TABLE IF NOT EXISTS amenities (
     has_high_tables BOOLEAN DEFAULT FALSE, 
     is_quiet BOOLEAN DEFAULT FALSE,        
     CONSTRAINT fk_amenities_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS menus (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     cafe_id INT NOT NULL,
     item_name VARCHAR(255) NOT NULL, 
     price INT NOT NULL,              
     CONSTRAINT fk_menu_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS reviews (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     cafe_id INT NOT NULL,
     user_id INT NOT NULL,
     rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5), 
     comment VARCHAR(100), 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_review_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE,
     CONSTRAINT fk_review_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS review_images (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     review_id INT NOT NULL,
     image_url TEXT NOT NULL,
     CONSTRAINT fk_image_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
-
-USE doko_cafe;
-
+-- Seed Data
 INSERT INTO users (full_name, email, password_hash, avatar_url, role_id) VALUES
 ('Tagashira', 'tagashira.kimura@example.jp', 'hashed_pw_123', 'https://example.com/avatar/tanaka.jpg', 1),
 ('Nguyen Thanh Duy', 'nguyenthanhduy.owner@example.vn', 'hashed_pw_456', 'https://example.com/avatar/nva.jpg', 2),
