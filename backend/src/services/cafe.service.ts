@@ -1,27 +1,11 @@
 import supabase from '../utils/db';
 
-// 1. READ: Lấy danh sách quán (Có hỗ trợ Tìm kiếm & Lọc theo P_ID 3)
-export const getAllCafes = async (filters: any) => {
-    let selectString = '*, amenities(*)';
+// 1. READ: Lấy danh sách quán 
+export const getAllCafes = async () => {
+    const { data, error } = await supabase
+        .from('cafes')
+        .select('*, amenities(*)');
 
-    // If there are strict amenity filters, we require inner join so we don't return cafes without matching amenities.
-    if (filters.has_wifi === 'true' || filters.is_quiet === 'true' || filters.has_ac === 'true' || filters.has_outlets === 'true') {
-        selectString = '*, amenities!inner(*)';
-    }
-
-    let query = supabase.from('cafes').select(selectString);
-
-    if (filters.keyword) {
-        query = query.or(`name_jp.ilike.%${filters.keyword}%,name_vn.ilike.%${filters.keyword}%,address.ilike.%${filters.keyword}%`);
-    }
-
-    // Logic lọc theo tiện ích (Màn hình ID 8)
-    if (filters.has_wifi === 'true') { query = query.eq('amenities.has_wifi', true); }
-    if (filters.is_quiet === 'true') { query = query.eq('amenities.is_quiet', true); }
-    if (filters.has_ac === 'true') { query = query.eq('amenities.has_ac', true); }
-    if (filters.has_outlets === 'true') { query = query.eq('amenities.has_outlets', true); }
-
-    const { data, error } = await query;
     if (error) throw new Error(error.message);
 
     return data.map((cafe: any) => {
@@ -101,4 +85,35 @@ export const deleteCafe = async (cafeId: number) => {
 
     if (error) throw new Error(error.message);
     return true;
-};
+};
+
+// SEARCH&FILTER: tìm kiếm và lọc
+export const searchCafes = async (filters: any) => {
+    let selectString = '*, amenities(*)';
+
+    // If there are strict amenity filters, we require inner join so we don't return cafes without matching amenities.
+    if (filters.has_wifi === 'true' || filters.is_quiet === 'true' || filters.has_ac === 'true' || filters.has_outlets === 'true') {
+        selectString = '*, amenities!inner(*)';
+    }
+
+    let query = supabase.from('cafes').select(selectString);
+
+    if (filters.keyword) {
+        query = query.or(`name_jp.ilike.%${filters.keyword}%,name_vn.ilike.%${filters.keyword}%,address.ilike.%${filters.keyword}%`);
+    }
+
+    // Logic lọc theo tiện ích
+    if (filters.has_wifi === 'true') { query = query.eq('amenities.has_wifi', true); }
+    if (filters.is_quiet === 'true') { query = query.eq('amenities.is_quiet', true); }
+    if (filters.has_ac === 'true') { query = query.eq('amenities.has_ac', true); }
+    if (filters.has_outlets === 'true') { query = query.eq('amenities.has_outlets', true); }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return data.map((cafe: any) => {
+        const { amenities, ...cafeData } = cafe;
+        const amenityObj = Array.isArray(amenities) ? amenities[0] : amenities;
+        return { ...cafeData, ...(amenityObj || {}) };
+    });
+};
