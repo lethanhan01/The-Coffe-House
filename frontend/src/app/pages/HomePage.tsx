@@ -11,12 +11,105 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Search, Filter, MapPin, Star, X, Wifi, Wind, Plug, Cigarette, Armchair } from 'lucide-react';
+import { Search, Filter, MapPin, Star, X, Wifi, Wind, Plug, Armchair } from 'lucide-react';
 import ProfileDialog from '../components/ProfileDialog';
 import NotificationsDialog from '../components/NotificationsDialog';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
+
+type BackendCafe = {
+  id: number | string;
+  name_jp?: string | null;
+  name_vn?: string | null;
+  address?: string | null;
+  phone_number?: string | null;
+  open_hours?: string | null;
+  is_open?: boolean | number | null;
+  is_crowded?: boolean | number | null;
+  average_rating?: number | null;
+  review_count?: number | null;
+  cover_image_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  lat?: number | null;
+  lng?: number | null;
+  has_wifi?: boolean | number | null;
+  has_ac?: boolean | number | null;
+  has_outlets?: boolean | number | null;
+  is_non_smoking?: boolean | number | null;
+  has_snacks?: boolean | number | null;
+  has_coffee?: boolean | number | null;
+};
+
+type CafeFilters = {
+  hasWifi: boolean;
+  hasAC: boolean;
+  hasOutlet: boolean;
+  noSmoking: boolean;
+  hasSnacks: boolean;
+  isOpen: boolean;
+};
+
+const defaultFilters: CafeFilters = {
+  hasWifi: false,
+  hasAC: false,
+  hasOutlet: false,
+  noSmoking: false,
+  hasSnacks: false,
+  isOpen: false,
+};
+
+const toBoolean = (value: boolean | number | null | undefined) => value === true || value === 1;
+
+const mapBackendCafe = (cafe: BackendCafe): Cafe => ({
+  id: String(cafe.id),
+  name: cafe.name_vn || cafe.name_jp || '',
+  nameJP: cafe.name_jp || cafe.name_vn || '',
+  address: cafe.address || '',
+  phone: cafe.phone_number || '',
+  openingHours: [{ day: 'Mon-Sun', hours: cafe.open_hours || '07:00 - 22:00' }],
+  isOpen: toBoolean(cafe.is_open),
+  status: toBoolean(cafe.is_crowded) ? 'crowded' : 'normal',
+  amenities: {
+    hasWifi: toBoolean(cafe.has_wifi),
+    hasAC: toBoolean(cafe.has_ac),
+    hasOutlet: toBoolean(cafe.has_outlets),
+    noSmoking: toBoolean(cafe.is_non_smoking),
+    hasSnacks: toBoolean(cafe.has_snacks),
+    hasCoffee: toBoolean(cafe.has_coffee),
+  },
+  menu: [],
+  rating: cafe.average_rating ?? 0,
+  reviewCount: cafe.review_count ?? 0,
+  images: [cafe.cover_image_url || DEFAULT_CAFE_IMAGE],
+  lat: cafe.lat ?? cafe.latitude ?? 0,
+  lng: cafe.lng ?? cafe.longitude ?? 0,
+});
+
+const applyCafeFilters = (items: Cafe[], keywordValue: string, filterValue: CafeFilters) => {
+  let result = [...items];
+  const keyword = keywordValue.trim().toLowerCase();
+
+  if (keyword) {
+    result = result.filter(cafe =>
+      cafe.name.toLowerCase().includes(keyword) ||
+      cafe.nameJP.toLowerCase().includes(keyword) ||
+      cafe.address.toLowerCase().includes(keyword)
+    );
+  }
+
+  if (filterValue.hasWifi) result = result.filter(c => c.amenities.hasWifi);
+  if (filterValue.hasAC) result = result.filter(c => c.amenities.hasAC);
+  if (filterValue.hasOutlet) result = result.filter(c => c.amenities.hasOutlet);
+  if (filterValue.noSmoking) result = result.filter(c => c.amenities.noSmoking);
+  if (filterValue.hasSnacks) result = result.filter(c => c.amenities.hasSnacks);
+  if (filterValue.isOpen) result = result.filter(c => c.isOpen);
+
+  return result;
+};
+
 export default function HomePage() {
-  const [cafes, setCafes] = useState<Cafe[]>([]);
   const [filteredCafes, setFilteredCafes] = useState<Cafe[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,14 +120,7 @@ export default function HomePage() {
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   
-  const [filters, setFilters] = useState({
-    hasWifi: false,
-    hasAC: false,
-    hasOutlet: false,
-    noSmoking: false,
-    hasSnacks: false,
-    isOpen: false,
-  });
+  const [filters, setFilters] = useState<CafeFilters>(defaultFilters);
 
   const { user } = useAuth();
   const { t, language } = useLanguage();
@@ -47,48 +133,40 @@ export default function HomePage() {
   }, [user, navigate]);
 
   useEffect(() => {
-    const allCafes = getCafes();
-    setCafes(allCafes);
-    setFilteredCafes(allCafes);
     setPromotions(getPromotions());
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [filters, searchQuery, cafes]);
+  const searchCafes = async (keywordValue = searchQuery, filterValue = filters) => {
+    const params = new URLSearchParams();
+    const keyword = keywordValue.trim();
 
-  const applyFilters = () => {
-    let result = [...cafes];
+    if (keyword) params.set('keyword', keyword);
+    if (filterValue.hasWifi) params.set('has_wifi', 'true');
+    if (filterValue.hasAC) params.set('has_ac', 'true');
+    if (filterValue.hasOutlet) params.set('has_outlets', 'true');
 
-    // Apply search
-    if (searchQuery) {
-      result = result.filter(cafe => 
-        cafe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cafe.nameJP.includes(searchQuery) ||
-        cafe.address.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cafes/search?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cafes');
+      }
+
+      const result = await response.json();
+      const nextCafes = applyCafeFilters((result.data || []).map(mapBackendCafe), keywordValue, filterValue);
+
+      setFilteredCafes(nextCafes);
+    } catch (error) {
+      setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
     }
-
-    // Apply filters
-    if (filters.hasWifi) result = result.filter(c => c.amenities.hasWifi);
-    if (filters.hasAC) result = result.filter(c => c.amenities.hasAC);
-    if (filters.hasOutlet) result = result.filter(c => c.amenities.hasOutlet);
-    if (filters.noSmoking) result = result.filter(c => c.amenities.noSmoking);
-    if (filters.hasSnacks) result = result.filter(c => c.amenities.hasSnacks);
-    if (filters.isOpen) result = result.filter(c => c.isOpen);
-
-    setFilteredCafes(result);
   };
 
+  useEffect(() => {
+    searchCafes('', defaultFilters);
+  }, []);
+
   const clearFilters = () => {
-    setFilters({
-      hasWifi: false,
-      hasAC: false,
-      hasOutlet: false,
-      noSmoking: false,
-      hasSnacks: false,
-      isOpen: false,
-    });
+    setFilters(defaultFilters);
   };
 
   const nextPromo = () => {
@@ -116,7 +194,13 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto p-4 space-y-6">
         {/* Search and Filter */}
-        <div className="flex gap-2">
+        <form
+          className="flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            searchCafes();
+          }}
+        >
           <div className="flex-1 flex gap-2">
             <Input
               placeholder={t('search')}
@@ -124,15 +208,15 @@ export default function HomePage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={() => {}}>
+            <Button type="submit">
               <Search className="size-4" />
             </Button>
           </div>
-          <Button variant="outline" onClick={() => setShowFilter(true)}>
+          <Button type="button" variant="outline" onClick={() => setShowFilter(true)}>
             <Filter className="size-4 mr-2" />
             {t('filter')}
           </Button>
-        </div>
+        </form>
 
         {/* Promotions Highlight */}
         {promotions.length > 0 && (
@@ -309,10 +393,23 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => setShowFilter(false)} className="flex-1">
+              <Button
+                onClick={() => {
+                  searchCafes();
+                  setShowFilter(false);
+                }}
+                className="flex-1"
+              >
                 {t('applyFilter')}
               </Button>
-              <Button variant="outline" onClick={clearFilters} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  clearFilters();
+                  searchCafes(searchQuery, defaultFilters);
+                }}
+                className="flex-1"
+              >
                 {t('clearFilter')}
               </Button>
             </div>

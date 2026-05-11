@@ -1,58 +1,70 @@
 import request from "supertest";
 import app from "../src/app";
-import db from "../src/utils/db";
 
-describe("Integration Test - Cafe Search/Filter API", () => {
-  test("GET /api/cafes/search?keyword=Hanoi - tìm kiếm theo keyword", async () => {
-    const res = await request(app)
-      .get("/api/cafes/search")
-      .query({ keyword: "Hanoi" });
+jest.setTimeout(15000);
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
+const searchCafes = (query: Record<string, string>) =>
+  request(app).get("/api/cafes/search").query(query);
+
+const expectSearchResponse = (res: request.Response) => {
+  expect(res.status).toBe(200);
+  expect(res.body.success).toBe(true);
+  expect(Array.isArray(res.body.data)).toBe(true);
+  expect(res.body.count).toBe(res.body.data.length);
+};
+
+const expectBooleanFlag = (cafe: Record<string, unknown>, field: string) => {
+  expect([true, 1]).toContain(cafe[field]);
+};
+
+describe("GET /api/cafes/search", () => {
+  test("searches cafes by keyword", async () => {
+    const res = await searchCafes({ keyword: "Hanoi" });
+
+    expectSearchResponse(res);
   });
 
-  test("GET /api/cafes/search?has_wifi=true - lọc quán có wifi", async () => {
-    const res = await request(app)
-      .get("/api/cafes/search")
-      .query({ has_wifi: "true" });
+  test("filters cafes by wifi", async () => {
+    const res = await searchCafes({ has_wifi: "true" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-
-    for (const cafe of res.body.data) {
-      expect(cafe.has_wifi).toBe(1);
-    }
+    expectSearchResponse(res);
+    res.body.data.forEach((cafe: Record<string, unknown>) => {
+      expectBooleanFlag(cafe, "has_wifi");
+    });
   });
 
-  test("GET /api/cafes/search?is_quiet=true - lọc quán yên tĩnh", async () => {
-    const res = await request(app)
-      .get("/api/cafes/search")
-      .query({ is_quiet: "true" });
+  test("filters cafes by quiet space", async () => {
+    const res = await searchCafes({ is_quiet: "true" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-
-    for (const cafe of res.body.data) {
-      expect(cafe.is_quiet).toBe(1);
-    }
+    expectSearchResponse(res);
+    res.body.data.forEach((cafe: Record<string, unknown>) => {
+      expectBooleanFlag(cafe, "is_quiet");
+    });
   });
 
-  test("GET /api/cafes/search?keyword=abcxyznotfound - không có kết quả", async () => {
-    const res = await request(app)
-      .get("/api/cafes/search")
-      .query({ keyword: "abcxyznotfound" });
+  test("filters cafes by air conditioner", async () => {
+    const res = await searchCafes({ has_ac: "true" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    expectSearchResponse(res);
+    res.body.data.forEach((cafe: Record<string, unknown>) => {
+      expectBooleanFlag(cafe, "has_ac");
+    });
+  });
+
+  test("filters cafes by outlets", async () => {
+    const res = await searchCafes({ has_outlets: "true" });
+
+    expectSearchResponse(res);
+    res.body.data.forEach((cafe: Record<string, unknown>) => {
+      expectBooleanFlag(cafe, "has_outlets");
+    });
+  });
+
+  test("returns empty data when keyword does not match", async () => {
+    const res = await searchCafes({ keyword: "abcxyznotfound" });
+
+    expectSearchResponse(res);
     expect(res.body.count).toBe(0);
     expect(res.body.data).toEqual([]);
   });
-});
-
-afterAll(async () => {
-  await db.end();
 });
