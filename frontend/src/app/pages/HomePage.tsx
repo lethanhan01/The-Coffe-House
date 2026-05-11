@@ -120,7 +120,7 @@ export default function HomePage() {
   const [showPromotion, setShowPromotion] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
-  
+
   const [filters, setFilters] = useState<CafeFilters>(defaultFilters);
 
   const { user } = useAuth();
@@ -190,7 +190,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopBar 
+      <TopBar
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => setShowProfile(true)}
       />
@@ -227,7 +227,7 @@ export default function HomePage() {
             <div className="p-4">
               <h2 className="font-bold mb-4">{t('promotions')}</h2>
               <div className="relative">
-                <div 
+                <div
                   className="cursor-pointer"
                   onClick={() => {
                     setSelectedPromotion(promotions[currentPromoIndex]);
@@ -248,7 +248,7 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-center gap-2 mt-4">
                   <Button size="sm" variant="outline" onClick={prevPromo}>←</Button>
                   <div className="flex items-center gap-1">
@@ -272,10 +272,10 @@ export default function HomePage() {
             <MapPin className="size-5 text-blue-600" />
             <span className="font-medium">{t('location')}</span>
           </div>
-          <MapView 
-            cafes={filteredCafes} 
+          <MapView
+            cafes={filteredCafes}
             onCafeClick={handleCafeClick}
-            height="h-48"
+            height="h-96"
           />
         </div>
 
@@ -337,7 +337,7 @@ export default function HomePage() {
           >
             <X className="size-4" />
           </Button>
-          
+
           <DialogHeader>
             <DialogTitle>{t('filter')}</DialogTitle>
           </DialogHeader>
@@ -439,7 +439,7 @@ export default function HomePage() {
           >
             <X className="size-4" />
           </Button>
-          
+
           <DialogHeader>
             <DialogTitle>{t('promotion')}</DialogTitle>
           </DialogHeader>

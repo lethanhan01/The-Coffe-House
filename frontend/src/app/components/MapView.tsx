@@ -11,11 +11,11 @@ interface MapViewProps {
   onLocationChange?: (lat: number, lng: number) => void;
 }
 
-export default function MapView({ 
-  cafes, 
-  onCafeClick, 
+export default function MapView({
+  cafes,
+  onCafeClick,
   height = 'h-96',
-  onLocationChange 
+  onLocationChange
 }: MapViewProps) {
   const { language } = useLanguage();
   const mapRef = useRef<L.Map | null>(null);
@@ -55,7 +55,7 @@ export default function MapView({
           setUserLocation(userLoc);
           setLocationError(null);
           onLocationChange?.(latitude, longitude);
-          
+
           // Center map on user location
           if (mapRef.current) {
             mapRef.current.setView(userLoc, 15);
