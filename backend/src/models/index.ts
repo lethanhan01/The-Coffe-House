@@ -4,3 +4,4 @@ export * from './Amenity';
 export * from './MenuItem';
 export * from './Review';
 export * from './ReviewImage';
+export * from './Booking';

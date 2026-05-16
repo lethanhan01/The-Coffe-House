@@ -63,6 +63,79 @@ CREATE TABLE IF NOT EXISTS review_images (
     CONSTRAINT fk_image_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
 );
 
+-- Fields used by the current account/profile and cafe setup screens
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);
+
+ALTER TABLE amenities
+    ADD COLUMN IF NOT EXISTS has_coffee BOOLEAN DEFAULT FALSE;
+
+-- Current owner module: booking management
+CREATE TABLE IF NOT EXISTS bookings (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    cafe_id INT NOT NULL,
+    booking_date DATE NOT NULL,
+    booking_time TIME NOT NULL,
+    number_of_people INT NOT NULL CHECK (number_of_people > 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'confirmed', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_booking_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_booking_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
+);
+
+-- Current owner module: cafe promotions
+CREATE TABLE IF NOT EXISTS promotions (
+    id SERIAL PRIMARY KEY,
+    cafe_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    title_jp VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    description_jp TEXT NOT NULL,
+    image_url TEXT,
+    valid_until DATE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promotion_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
+);
+
+-- Current owner module: staff list for each cafe
+CREATE TABLE IF NOT EXISTS staff (
+    id SERIAL PRIMARY KEY,
+    cafe_id INT NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    email VARCHAR(255),
+    avatar_url TEXT,
+    position VARCHAR(100) NOT NULL,
+    position_jp VARCHAR(100) NOT NULL,
+    joined_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_staff_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
+);
+
+-- Current owner/admin module: reports and cafe delete requests
+CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(30) NOT NULL CHECK (type IN ('review_complaint', 'cafe_delete')),
+    status VARCHAR(20) NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'resolved', 'rejected')),
+    title VARCHAR(255) NOT NULL,
+    title_jp VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    description_jp TEXT NOT NULL,
+    cafe_id INT,
+    reporter_id INT,
+    cafe_name VARCHAR(255),
+    cafe_name_jp VARCHAR(255),
+    reporter_name VARCHAR(255),
+    target_info TEXT,
+    target_info_jp TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_report_cafe FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE SET NULL,
+    CONSTRAINT fk_report_reporter FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Seed Data
 INSERT INTO users (full_name, email, password_hash, avatar_url, role_id) VALUES
 ('Tagashira', 'tagashira.kimura@example.jp', 'hashed_pw_123', 'https://example.com/avatar/tanaka.jpg', 1),
