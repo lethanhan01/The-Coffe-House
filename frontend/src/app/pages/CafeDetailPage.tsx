@@ -14,6 +14,42 @@ import NotificationsDialog from '../components/NotificationsDialog';
 import BookingDialog from '../components/BookingDialog';
 import ReviewDialog from '../components/ReviewDialog';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
+
+const toBoolean = (value: boolean | number | null | undefined) => value === true || value === 1;
+
+const mapBackendCafe = (raw: any): Cafe => ({
+  id: String(raw.id),
+  name: raw.name_vn || raw.name_jp || '',
+  nameJP: raw.name_jp || raw.name_vn || '',
+  address: raw.address || '',
+  phone: raw.phone_number || '',
+  openingHours: [{ day: 'Mon-Sun', hours: raw.open_hours || '07:00 - 22:00' }],
+  isOpen: toBoolean(raw.is_open),
+  status: toBoolean(raw.is_crowded) ? 'crowded' : 'normal',
+  amenities: {
+    hasWifi: toBoolean(raw.has_wifi),
+    hasAC: toBoolean(raw.has_ac),
+    hasOutlet: toBoolean(raw.has_outlets),
+    noSmoking: toBoolean(raw.is_non_smoking),
+    hasSnacks: toBoolean(raw.has_snacks),
+    hasCoffee: toBoolean(raw.has_coffee),
+  },
+  menu: raw.menu_items?.map((item: any) => ({
+    id: String(item.id),
+    name: item.name_vn || item.name || '',
+    nameJP: item.name_jp || item.name || '',
+    price: item.price || 0,
+    category: item.category || '',
+  })) || [],
+  rating: raw.average_rating ?? 0,
+  reviewCount: raw.review_count ?? 0,
+  images: [raw.cover_image_url || DEFAULT_CAFE_IMAGE],
+  lat: raw.lat ?? raw.latitude ?? 0,
+  lng: raw.lng ?? raw.longitude ?? 0,
+});
+
 export default function CafeDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,6 +65,7 @@ export default function CafeDetailPage() {
   const [showBooking, setShowBooking] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'recent' | 'popular'>('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -38,26 +75,56 @@ export default function CafeDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    
-    const cafes = getCafes();
-    const foundCafe = cafes.find(c => c.id === id);
-    setCafe(foundCafe || null);
-    
-    // Get other cafes (exclude current)
-    const others = cafes.filter(c => c.id !== id);
-    setOtherCafes(others);
-    
-    // Get all promotions
+
+    const fetchCafe = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/cafes/${id}`);
+        if (!response.ok) throw new Error('Not found');
+        const result = await response.json();
+        setCafe(mapBackendCafe(result.data));
+      } catch {
+        // Fallback sang mockData nếu backend lỗi
+        const cafes = getCafes();
+        setCafe(cafes.find(c => c.id === id) || null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchOtherCafes = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/cafes`);
+        if (!response.ok) throw new Error('Failed');
+        const result = await response.json();
+        const others = (result.data || [])
+          .map(mapBackendCafe)
+          .filter((c: Cafe) => String(c.id) !== String(id));
+        setOtherCafes(others);
+      } catch {
+        const cafes = getCafes();
+        setOtherCafes(cafes.filter(c => c.id !== id));
+      }
+    };
+
+    fetchCafe();
+    fetchOtherCafes();
     setPromotions(getPromotions());
-    
-    loadReviews();
+    fetchReviews();
   }, [id]);
 
-  const loadReviews = () => {
+  const fetchReviews = async () => {
     if (!id) return;
-    const allReviews = getReviews();
-    const cafeReviews = allReviews.filter(r => r.cafeId === id);
-    setReviews(cafeReviews);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews?cafe_id=${id}`);
+      if (!response.ok) throw new Error('Failed to load reviews');
+      const result = await response.json();
+      setReviews(result.data || []);
+    } catch {
+      // Fallback sang mockData nếu backend lỗi
+      const allReviews = getReviews();
+      setReviews(allReviews.filter(r => r.cafeId === id));
+    }
   };
 
   const getFilteredReviews = () => {
@@ -78,11 +145,22 @@ export default function CafeDetailPage() {
 
   const handleReviewSuccess = () => {
     setShowReview(false);
-    loadReviews();
+    fetchReviews();
   };
 
   if (!user) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <TopBar showBackButton />
+        <div className="flex items-center justify-center h-96">
+          <p className="text-gray-500">Đang tải...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!cafe) {
@@ -90,7 +168,7 @@ export default function CafeDetailPage() {
       <div className="min-h-screen bg-gray-50">
         <TopBar showBackButton />
         <div className="flex items-center justify-center h-96">
-          <p className="text-gray-500">Cafe not found</p>
+          <p className="text-gray-500">Không tìm thấy quán cafe</p>
         </div>
       </div>
     );

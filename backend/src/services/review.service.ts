@@ -1,5 +1,36 @@
 import supabase from '../utils/db';
 
+export const getReviewsByCafeId = async (cafe_id: number) => {
+    const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+            id,
+            cafe_id,
+            user_id,
+            rating,
+            comment,
+            created_at,
+            users (full_name, avatar_url),
+            review_images (image_url)
+        `)
+        .eq('cafe_id', cafe_id)
+        .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to fetch reviews: ${error.message}`);
+
+    return (data || []).map((r: any) => ({
+        id: r.id,
+        cafe_id: r.cafe_id,
+        user_id: r.user_id,
+        userName: r.users?.full_name || 'Anonymous',
+        avatarUrl: r.users?.avatar_url || null,
+        rating: Math.min(5, Math.max(1, Number(r.rating))),
+        comment: r.comment || '',
+        createdAt: r.created_at,
+        images: (r.review_images || []).map((img: any) => img.image_url),
+    }));
+};
+
 export const createReview = async (reviewData: {
     cafe_id: number;
     user_id: number;
@@ -47,10 +78,14 @@ export const createReview = async (reviewData: {
     let average_rating = 0;
 
     if (review_count > 0) {
-        const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+        // Clamp từng rating về [1, 5] để tránh data dirty ảnh hưởng kết quả
+        const totalRating = allReviews.reduce((sum, r) => {
+            const clampedRating = Math.min(5, Math.max(1, Number(r.rating)));
+            return sum + clampedRating;
+        }, 0);
         average_rating = totalRating / review_count;
-        // Làm tròn 2 chữ số thập phân
-        average_rating = Math.round(average_rating * 100) / 100;
+        // Làm tròn 2 chữ số thập phân, đảm bảo không vượt quá 5
+        average_rating = Math.min(5, Math.round(average_rating * 100) / 100);
     }
 
     // 4. Update the cafe

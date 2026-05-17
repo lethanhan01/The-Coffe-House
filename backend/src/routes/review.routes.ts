@@ -4,7 +4,10 @@ import { authenticateToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Phải đăng nhập mới được viết đánh giá (Role nào cũng được, thường là Role 1)
+// Lấy danh sách reviews của một quán (không cần đăng nhập)
+router.get('/', reviewController.getReviewsHandler);
+
+// Phải đăng nhập mới được viết đánh giá
 router.post('/', authenticateToken, reviewController.createReviewHandler);
 
 export default router;

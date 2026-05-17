@@ -218,3 +218,21 @@ ALTER TABLE users
 ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE reviews DISABLE ROW LEVEL SECURITY;
 ALTER TABLE review_images DISABLE ROW LEVEL SECURITY;
+-- Reset average_rating dựa trên data thực trong bảng reviews
+UPDATE cafes
+SET
+    review_count = (
+        SELECT COUNT(*) FROM reviews 
+        WHERE reviews.cafe_id = cafes.id
+    ),
+    average_rating = LEAST(5.00, (
+        SELECT COALESCE(
+            ROUND(
+                AVG(LEAST(5, GREATEST(1, rating::numeric))::numeric),
+                2
+            ),
+            0.00
+        )
+        FROM reviews 
+        WHERE reviews.cafe_id = cafes.id
+    ));

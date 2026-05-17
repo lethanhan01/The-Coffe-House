@@ -1,6 +1,19 @@
 import { Request, Response } from 'express';
 import * as reviewService from '../services/review.service';
 
+export const getReviewsHandler = async (req: Request, res: Response) => {
+    try {
+        const cafe_id = parseInt(req.query.cafe_id as string);
+        if (!cafe_id || isNaN(cafe_id)) {
+            return res.status(400).json({ error: 'Missing or invalid cafe_id query param' });
+        }
+        const reviews = await reviewService.getReviewsByCafeId(cafe_id);
+        res.status(200).json({ success: true, data: reviews });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message || 'Internal server error' });
+    }
+};
+
 export const createReviewHandler = async (req: Request, res: Response) => {
     try {
         const { cafe_id, rating, comment, image_urls } = req.body;
