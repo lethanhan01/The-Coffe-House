@@ -7,7 +7,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Calendar } from './ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { saveBooking, saveNotification, type Cafe } from '../utils/mockData';
+import { createBooking } from '../services/bookingService';
+import { saveNotification, type Cafe } from '../utils/mockData';
 
 interface BookingDialogProps {
   open: boolean;
@@ -23,6 +24,8 @@ export default function BookingDialog({ open, onClose, cafe, onSuccess }: Bookin
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState('');
   const [numberOfPeople, setNumberOfPeople] = useState(2);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -30,41 +33,59 @@ export default function BookingDialog({ open, onClose, cafe, onSuccess }: Bookin
     '18:00', '19:00', '20:00', '21:00', '22:00'
   ];
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!user || !date || !time) {
-      alert('Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
 
-    const booking = {
-      id: Date.now().toString(),
-      userId: user.id,
-      cafeId: cafe.id,
-      date: date.toISOString(),
-      time,
-      numberOfPeople,
-      status: 'confirmed' as const, // Auto-confirm for demo
-      createdAt: new Date().toISOString(),
-    };
+    setIsLoading(true);
+    setError(null);
 
-    saveBooking(booking);
+    try {
+      // Format date as YYYY-MM-DD
+      const bookingDate = date.toISOString().split('T')[0];
 
-    // Create notification
-    const notification = {
-      id: Date.now().toString(),
-      userId: user.id,
-      type: 'booking_confirmed' as const,
-      message: `Your booking at ${cafe.name} has been confirmed for ${date.toLocaleDateString()} at ${time}`,
-      messageJP: `${cafe.nameJP}の予約が${date.toLocaleDateString('ja-JP')} ${time}に確認されました`,
-      relatedId: booking.id,
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
+      // Call the booking API
+      const result = await createBooking({
+        user_id: parseInt(user.id),
+        cafe_id: cafe.id,
+        booking_date: bookingDate,
+        booking_time: time,
+        number_of_people: numberOfPeople
+      });
 
-    saveNotification(notification);
+      if (!result) {
+        setError('Failed to create booking. Please try again.');
+        return;
+      }
 
-    alert('Booking confirmed!');
-    onSuccess();
+      // Create notification for successful booking
+      const notification = {
+        id: Date.now().toString(),
+        userId: user.id,
+        type: 'booking_confirmed' as const,
+        message: `Your booking at ${cafe.name} has been confirmed for ${date.toLocaleDateString()} at ${time}`,
+        messageJP: `${cafe.nameJP}の予約が${date.toLocaleDateString('ja-JP')} ${time}に確認されました`,
+        relatedId: result.id.toString(),
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveNotification(notification);
+
+      // Show success message
+      alert(`Booking confirmed! Your booking ID: ${result.id}`);
+      
+      // Close dialog and trigger refresh
+      onClose();
+      onSuccess();
+    } catch (err) {
+      console.error('Booking error:', err);
+      setError('An error occurred while creating your booking.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!user) return null;
@@ -77,6 +98,12 @@ export default function BookingDialog({ open, onClose, cafe, onSuccess }: Bookin
         </DialogHeader>
 
         <div className="space-y-4">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          
           <div>
             <Label>{t('selectDate')}</Label>
             <Calendar
@@ -129,8 +156,12 @@ export default function BookingDialog({ open, onClose, cafe, onSuccess }: Bookin
             </div>
           )}
 
-          <Button onClick={handleConfirm} className="w-full" disabled={!date || !time}>
-            {t('confirm')}
+          <Button 
+            onClick={handleConfirm} 
+            className="w-full" 
+            disabled={!date || !time || isLoading}
+          >
+            {isLoading ? 'Booking...' : t('confirm')}
           </Button>
         </div>
       </DialogContent>

@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import * as bookingService from '../services/booking.service';
+import * as emailService from '../services/email.service';
+import supabase from '../utils/db';
 
 // API: Tạo booking mới
 export const createBooking = async (req: Request, res: Response) => {
@@ -16,6 +18,41 @@ export const createBooking = async (req: Request, res: Response) => {
         }
 
         const newBooking = await bookingService.createBooking(bookingData);
+        
+        // Fetch user details for email
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('email, full_name')
+            .eq('id', newBooking.user_id)
+            .single();
+
+        // Fetch cafe details for email
+        const { data: cafeData, error: cafeError } = await supabase
+            .from('cafes')
+            .select('name_vn, name_jp, address, phone_number')
+            .eq('id', newBooking.cafe_id)
+            .single();
+
+        // Send confirmation email if both user and cafe data are available
+        if (userData && cafeData) {
+            const cafeName = userData.full_name?.includes('日本') || userData.full_name?.includes('にほ') 
+                ? cafeData.name_jp 
+                : cafeData.name_vn;
+            
+            await emailService.sendBookingConfirmationEmail(
+                userData.email,
+                userData.full_name,
+                cafeName,
+                newBooking.booking_date,
+                newBooking.booking_time,
+                newBooking.number_of_people,
+                cafeData.address,
+                cafeData.phone_number,
+                newBooking.id,
+                'vi' // Default to Vietnamese, can be enhanced to detect user preference
+            );
+        }
+
         res.status(201).json({ 
             success: true, 
             message: "Tạo đặt chỗ thành công", 
@@ -166,7 +203,25 @@ export const cancelBooking = async (req: Request, res: Response) => {
             });
         }
 
+        // Get booking details before canceling
+        const { data: bookingData, error: bookingError } = await supabase
+            .from('bookings')
+            .select('*, users(email, full_name), cafes(name_vn)')
+            .eq('id', bookingId)
+            .single();
+
         const result = await bookingService.cancelBooking(bookingId);
+
+        // Send cancellation email if booking data available
+        if (bookingData && bookingData.users) {
+            await emailService.sendBookingCancellationEmail(
+                bookingData.users.email,
+                bookingData.users.full_name,
+                bookingData.cafes?.name_vn || 'Quán Cafe',
+                bookingId,
+                'vi'
+            );
+        }
         
         res.status(200).json({ 
             success: true, 
