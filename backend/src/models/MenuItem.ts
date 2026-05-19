@@ -1,6 +1,8 @@
 export interface MenuItem {
-    id: number;
-    cafeId: number;
-    itemName: string;
+    id: string;
+    name: string;
+    nameJP: string;
     price: number;
+    category: string;
+    image?: string;
 }

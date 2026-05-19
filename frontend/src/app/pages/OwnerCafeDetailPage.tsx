@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getCafes, getReviews, getBookings, getPromotions, getStaff, type Cafe, type Review, type Booking, type Promotion, type Staff } from '../utils/mockData';
+import { getCafes, getReviews, getBookings, getPromotions, getStaff, /*type Cafe,*/ type Review, type Booking, type Promotion, type Staff } from '../utils/mockData';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, MapPin, Phone, Clock, Star, MessageSquare, Calendar, Tag, Users, Info, Wifi, Wind, Plug, Cigarette, Cookie, Edit, Coffee, AlertCircle, Flag, Plus, Trash2, Eye, Mail, Briefcase, Armchair } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -16,7 +16,7 @@ import { StaffDetailDialog } from '../components/StaffDetailDialog';
 import { AddStaffDialog } from '../components/AddStaffDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
-
+import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe } from '../services/cafeService';
 export default function OwnerCafeDetailPage() {
   const { id } = useParams();
   const [cafe, setCafe] = useState<Cafe | null>(null);
@@ -43,52 +43,58 @@ export default function OwnerCafeDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    // Load cafe
-    const allCafes = getCafes();
-    const foundCafe = allCafes.find(c => c.id === id);
-
-    if (!foundCafe) {
-      navigate('/owner');
-      return;
-    }
-
-    // Check ownership
-    const cafeOwnersJson = localStorage.getItem('cafeOwners');
-    if (cafeOwnersJson) {
-      const cafeOwners = JSON.parse(cafeOwnersJson);
-      if (cafeOwners[id] !== user?.id) {
+    const loadData = async () => {
+      // Load cafe
+      const foundCafe = await getCafeById(parseInt(id));
+      console.log('Found cafe:', foundCafe);
+      if (!foundCafe) {
         navigate('/owner');
         return;
       }
-    }
 
-    setCafe(foundCafe);
+      // Check ownership
+      // const cafeOwnersJson = localStorage.getItem('cafeOwners');
+      // if (cafeOwnersJson) {
+      //   const cafeOwners = JSON.parse(cafeOwnersJson);
+      //   if (cafeOwners[id] !== user?.id) {
+      //     navigate('/owner');
+      //     return;
+      //   }
+      // }
+      if (foundCafe.owner_id !== user?.id) {
+        navigate('/owner');
+        return;
+      }
 
-    // Load reviews for this cafe
-    const allReviews = getReviews();
-    setReviews(allReviews.filter(r => r.cafeId === id));
+      setCafe(foundCafe);
 
-    // Load bookings for this cafe - force reinitialize if needed
-    const allBookings = getBookings();
-    const cafeBookings = allBookings.filter(b => b.cafeId === id);
-    console.log('All bookings:', allBookings);
-    console.log('Cafe bookings for cafe', id, ':', cafeBookings);
-    setBookings(cafeBookings);
+      // Load reviews for this cafe
+      const allReviews = getReviews();
+      setReviews(allReviews.filter(r => r.cafeId === id));
 
-    // Load promotions for this cafe
-    const allPromotions = getPromotions();
-    const cafePromotions = allPromotions.filter(p => p.cafeId === id);
-    console.log('All promotions:', allPromotions);
-    console.log('Cafe promotions for cafe', id, ':', cafePromotions);
-    setPromotions(cafePromotions);
+      // Load bookings for this cafe - force reinitialize if needed
+      const allBookings = getBookings();
+      const cafeBookings = allBookings.filter(b => b.cafeId === id);
+      console.log('All bookings:', allBookings);
+      console.log('Cafe bookings for cafe', id, ':', cafeBookings);
+      setBookings(cafeBookings);
 
-    // Load staff for this cafe
-    const allStaff = getStaff();
-    const cafeStaff = allStaff.filter(s => s.cafeId === id);
-    console.log('All staff:', allStaff);
-    console.log('Cafe staff for cafe', id, ':', cafeStaff);
-    setStaff(cafeStaff);
+      // Load promotions for this cafe
+      const allPromotions = getPromotions();
+      const cafePromotions = allPromotions.filter(p => p.cafeId === id);
+      console.log('All promotions:', allPromotions);
+      console.log('Cafe promotions for cafe', id, ':', cafePromotions);
+      setPromotions(cafePromotions);
+
+      // Load staff for this cafe
+      const allStaff = getStaff();
+      const cafeStaff = allStaff.filter(s => s.cafeId === id);
+      console.log('All staff:', allStaff);
+      console.log('Cafe staff for cafe', id, ':', cafeStaff);
+      setStaff(cafeStaff);
+    };
+
+    loadData();
   }, [id, user, navigate]);
 
   // Calculate pending bookings count
@@ -102,7 +108,7 @@ export default function OwnerCafeDetailPage() {
     navigate('/owner');
   };
 
-  const handleEditCafe = (cafeData: {
+  const handleEditCafe = async (cafeData: {
     name: string;
     nameJP: string;
     address: string;
@@ -118,29 +124,46 @@ export default function OwnerCafeDetailPage() {
     };
   }) => {
     if (!id) return;
+    const updateCafeInput: UpdateCafeInput = {
+      name_jp: cafeData.nameJP,
+      name_vn: cafeData.name,
+      address: cafeData.address,
+      phone_number: cafeData.phone,
+      cover_image_url: cafeData.coverImage,
+      amenities: {
+        has_ac: cafeData.amenities.hasAC,
+        has_wifi: cafeData.amenities.hasWifi,
+        has_snacks: cafeData.amenities.hasSnacks,
+        has_outlets: cafeData.amenities.hasOutlet,
+        is_non_smoking: cafeData.amenities.noSmoking,
+        has_high_tables: cafeData.amenities.hasCoffee,
+      },
+    };
 
+    await updateCafe(parseInt(id), updateCafeInput);
     // Update cafe in localStorage
-    const cafesJson = localStorage.getItem('cafes');
-    const cafes = cafesJson ? JSON.parse(cafesJson) : [];
-    const updatedCafes = cafes.map((c: Cafe) => {
-      if (c.id === id) {
-        return {
-          ...c,
-          name: cafeData.name,
-          nameJP: cafeData.nameJP,
-          address: cafeData.address,
-          phone: cafeData.phone,
-          images: [cafeData.coverImage, ...c.images.slice(1)],
-          amenities: cafeData.amenities,
-        };
-      }
-      return c;
-    });
+    // const cafesJson = localStorage.getItem('cafes');
+    // const cafes = cafesJson ? JSON.parse(cafesJson) : [];
+    // const updatedCafes = cafes.map((c: Cafe) => {
+    //   if (c.id === id) {
+    //     return {
+    //       ...c,
+    //       name: cafeData.name,
+    //       nameJP: cafeData.nameJP,
+    //       address: cafeData.address,
+    //       phone: cafeData.phone,
+    //       images: [cafeData.coverImage, ...c.images.slice(1)],
+    //       amenities: cafeData.amenities,
+    //     };
+    //   }
+    //   return c;
+    // });
 
-    localStorage.setItem('cafes', JSON.stringify(updatedCafes));
+    // localStorage.setItem('cafes', JSON.stringify(updatedCafes));
 
-    // Update local state
-    const updatedCafe = updatedCafes.find((c: Cafe) => c.id === id);
+    // // Update local state
+    // const updatedCafe = updatedCafes.find((c: Cafe) => c.id === id);
+    const updatedCafe = await getCafeById(parseInt(id));
     if (updatedCafe) {
       setCafe(updatedCafe);
     }

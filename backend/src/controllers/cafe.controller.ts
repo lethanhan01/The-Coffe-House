@@ -13,13 +13,13 @@ export const getCafes = async (req: Request, res: Response) => {
     }
 };
 //API: tim kiem va loc quan
-export const searchCafes = async(req: Request, res: Response) => {
-    try{
+export const searchCafes = async (req: Request, res: Response) => {
+    try {
         const filters = req.query;
-        
+
         // Log filters for debugging
         console.log("Search filters:", filters);
-        
+
         const cafes = await cafeService.searchCafes(filters);
 
         res.status(200).json({
@@ -27,7 +27,7 @@ export const searchCafes = async(req: Request, res: Response) => {
             count: cafes.length,
             data: cafes
         });
-    } catch(error: any){
+    } catch (error: any) {
         console.error("Lỗi tìm kiếm/lọc quán: ", error);
 
         res.status(500).json({

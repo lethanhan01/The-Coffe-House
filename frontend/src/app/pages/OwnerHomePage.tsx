@@ -7,7 +7,9 @@ import { Input } from '../components/ui/input';
 import { Coffee, Search, Plus, User } from 'lucide-react';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { AddCafeDialog } from '../components/AddCafeDialog';
-import { type Cafe, getCafes } from '../utils/mockData';
+// import { type Cafe, getCafes } from '../utils/mockData';
+import { type Cafe, type CreateCafeInput } from '../services/cafeService';
+import { getAllCafes, createCafe } from '../services/cafeService';
 
 export default function OwnerHomePage() {
   const [cafes, setCafes] = useState<Cafe[]>([]);
@@ -22,15 +24,15 @@ export default function OwnerHomePage() {
     loadCafes();
   }, [user]);
 
-  const loadCafes = () => {
+  const loadCafes = async () => {
     // Load cafes owned by this user
-    const allCafes = getCafes();
+    const allCafes = (await getAllCafes()) ?? [];
     const ownedCafes = allCafes.filter(cafe => {
       // Get owner info from localStorage
-      const cafeOwnersJson = localStorage.getItem('cafeOwners');
-      if (cafeOwnersJson) {
-        const cafeOwners = JSON.parse(cafeOwnersJson);
-        return cafeOwners[cafe.id] === user?.id;
+      // const cafeOwnersJson = localStorage.getItem('cafeOwners');
+      if (cafe.owner_id) {
+        // const cafeOwners = JSON.parse(cafeOwnersJson);
+        return cafe.owner_id === user?.id;
       }
       return false;
     });
@@ -50,8 +52,8 @@ export default function OwnerHomePage() {
       setFilteredCafes(cafes);
     }
   }, [searchQuery, cafes]);
-
-  const handleAddCafe = (cafeData: {
+  //CreateCafeInput
+  const handleAddCafe = async (cafeData: {
     name: string;
     nameJP: string;
     address: string;
@@ -63,11 +65,11 @@ export default function OwnerHomePage() {
       hasOutlet: boolean;
       noSmoking: boolean;
       hasSnacks: boolean;
+      hasCoffee: boolean;
     };
   }) => {
     // Create new cafe
     const newCafe = {
-      id: Date.now().toString(),
       ...cafeData,
       images: [cafeData.coverImage],
       rating: 0,
@@ -78,20 +80,42 @@ export default function OwnerHomePage() {
       hours: '07:00 - 22:00',
     };
 
+    const createCafeInput: CreateCafeInput = {
+      owner_id: Number(user?.id),
+      name_jp: newCafe.nameJP,
+      name_vn: newCafe.name,
+      address: newCafe.address,
+      phone_number: newCafe.phone,
+      cover_image_url: newCafe.coverImage,
+      open_hours: newCafe.hours,
+      amenities: {
+        has_ac: newCafe.amenities.hasAC,
+        has_wifi: newCafe.amenities.hasWifi,
+        has_snacks: newCafe.amenities.hasSnacks,
+        has_outlets: newCafe.amenities.hasOutlet,
+        is_non_smoking: newCafe.amenities.noSmoking,
+        is_quiet: newCafe.status === 'quiet',
+        has_high_tables: newCafe.amenities.hasCoffee,
+      },
+    };
+
+    // Call API to create cafe
+    await createCafe(createCafeInput);
+
     // Add to cafes
-    const cafesJson = localStorage.getItem('cafes');
-    const cafes = cafesJson ? JSON.parse(cafesJson) : [];
-    cafes.push(newCafe);
-    localStorage.setItem('cafes', JSON.stringify(cafes));
+    // const cafesJson = localStorage.getItem('cafes');
+    // const cafes = cafesJson ? JSON.parse(cafesJson) : [];
+    // cafes.push(newCafe);
+    // localStorage.setItem('cafes', JSON.stringify(cafes));
 
     // Map owner to cafe
-    const cafeOwnersJson = localStorage.getItem('cafeOwners');
-    const cafeOwners = cafeOwnersJson ? JSON.parse(cafeOwnersJson) : {};
-    cafeOwners[newCafe.id] = user?.id;
-    localStorage.setItem('cafeOwners', JSON.stringify(cafeOwners));
+    // const cafeOwnersJson = localStorage.getItem('cafeOwners');
+    // const cafeOwners = cafeOwnersJson ? JSON.parse(cafeOwnersJson) : {};
+    // cafeOwners[newCafe.id] = user?.id;
+    // localStorage.setItem('cafeOwners', JSON.stringify(cafeOwners));
 
     setShowAddDialog(false);
-    loadCafes();
+    await loadCafes();
   };
 
   const handleLogout = () => {

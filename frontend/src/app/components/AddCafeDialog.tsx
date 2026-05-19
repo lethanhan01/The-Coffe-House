@@ -31,7 +31,9 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   const [nameJP, setNameJP] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
-  const [coverImage, setCoverImage] = useState<string>('');
+  // const [coverImage, setCoverImage] = useState<string>('');
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState('');
   const [amenities, setAmenities] = useState({
     hasWifi: false,
     hasAC: false,
@@ -43,18 +45,51 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   const [error, setError] = useState('');
   const { language, t } = useLanguage();
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setCoverImage(reader.result as string);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
 
-  const handleSubmit = (e: React.FormEvent) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setCoverImage(file);
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setPreviewImage(previewUrl);
+  };
+  const uploadImage = async (file: File) => {
+
+    const formData = new FormData();
+
+    formData.append('image', file);
+
+    const response = await fetch(
+      'http://localhost:3000/api/upload',
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    return response.json();
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -63,21 +98,40 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
       return;
     }
 
+    // onSubmit({
+    //   name,
+    //   nameJP,
+    //   address,
+    //   phone,
+    //   coverImage: coverImage || 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
+    //   amenities,
+    // });
+    let imageUrl =
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800';
+
+    if (coverImage) {
+
+      const uploadResult = await uploadImage(coverImage);
+
+      imageUrl = uploadResult.url;
+    }
+
     onSubmit({
       name,
       nameJP,
       address,
       phone,
-      coverImage: coverImage || 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
+      coverImage: imageUrl,
       amenities,
     });
-
     // Reset form
     setName('');
     setNameJP('');
     setAddress('');
     setPhone('');
-    setCoverImage('');
+    // setCoverImage('');
+    setCoverImage(null);
+    setPreviewImage('');
     setAmenities({
       hasWifi: false,
       hasAC: false,
@@ -162,13 +216,13 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
             <Label>
               {language === 'jp' ? '設備・サービス' : 'Tiện ích'}
             </Label>
-            
+
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="hasWifi"
                   checked={amenities.hasWifi}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasWifi: checked as boolean })
                   }
                 />
@@ -181,7 +235,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                 <Checkbox
                   id="hasAC"
                   checked={amenities.hasAC}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasAC: checked as boolean })
                   }
                 />
@@ -194,7 +248,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                 <Checkbox
                   id="hasOutlet"
                   checked={amenities.hasOutlet}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasOutlet: checked as boolean })
                   }
                 />
@@ -207,7 +261,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                 <Checkbox
                   id="noSmoking"
                   checked={amenities.noSmoking}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, noSmoking: checked as boolean })
                   }
                 />
@@ -220,7 +274,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                 <Checkbox
                   id="hasSnacks"
                   checked={amenities.hasSnacks}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasSnacks: checked as boolean })
                   }
                 />
@@ -233,7 +287,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                 <Checkbox
                   id="hasCoffee"
                   checked={amenities.hasCoffee}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasCoffee: checked as boolean })
                   }
                 />
@@ -254,9 +308,10 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
               accept="image/*"
               onChange={handleImageUpload}
             />
-            {coverImage && (
+            {previewImage && ( //coverImage &&
               <img
-                src={coverImage}
+                // src={coverImage}
+                src={previewImage}
                 alt="Cover"
                 className="w-full h-40 object-cover mt-2"
               />

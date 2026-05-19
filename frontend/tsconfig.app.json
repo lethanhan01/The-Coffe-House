@@ -25,6 +25,7 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "src"
+    "src",
+    "../backend/src/services/storageService.ts"
   ]
 }

@@ -1,21 +1,53 @@
 const API_URL = 'http://localhost:3000/api';
 
 export interface Cafe {
-  id: number;
-  name_vn: string;
-  name_jp: string;
-  description_vn?: string;
-  description_jp?: string;
+  // id: number;
+  // ownerId: number;
+  // nameJp: string;
+  // nameVn: string;
+  // address: string;
+  // phoneNumber?: string | null;
+  // openHours?: string | null;
+  // isOpen: boolean;
+  // isCrowded: boolean;
+  // averageRating: number;
+  // reviewCount: number;
+  // coverImageUrl?: string | null;
+  id: string;
+  owner_id: string | number;
+  name: string;
+  nameJP: string;
   address: string;
-  phone_number: string;
-  opening_time?: string;
-  closing_time?: string;
-  avatar_url?: string;
-  owner_id: number;
-  created_at: string;
-  updated_at: string;
+  phone: string;
+  openingHours: {
+    day: string;
+    hours: string;
+  }[];
+  isOpen: boolean;
+  status: 'normal' | 'crowded';
+  amenities: {
+    hasWifi: boolean;
+    hasAC: boolean;
+    hasOutlet: boolean;
+    noSmoking: boolean;
+    hasSnacks: boolean;
+    hasCoffee: boolean;
+  };
+  menu: MenuItem[];
+  rating: number;
+  reviewCount: number;
+  images: string[];
+  lat: number;
+  lng: number;
 }
-
+export interface MenuItem {
+  id: string;
+  name: string;
+  nameJP: string;
+  price: number;
+  category: string;
+  image?: string;
+}
 export interface CafeResponse {
   success: boolean;
   message?: string;
@@ -101,7 +133,28 @@ export const searchCafes = async (query: string): Promise<Cafe[] | null> => {
 };
 
 // 4. Create cafe (owner only)
-export const createCafe = async (cafeData: Partial<Cafe>): Promise<Cafe | null> => {
+export interface CreateCafeInput {
+  owner_id: number;
+  name_jp: string;
+  name_vn: string;
+  address: string;
+  phone_number: string;
+  open_hours?: string;
+  cover_image_url?: string;
+
+  amenities: {
+    has_ac?: boolean;
+    has_wifi?: boolean;
+    is_quiet?: boolean;
+    has_snacks?: boolean;
+    has_outlets?: boolean;
+    is_non_smoking?: boolean;
+    has_high_tables?: boolean;
+  };
+}
+export const createCafe = async (
+  cafeData: CreateCafeInput
+): Promise<Cafe | null> => {
   try {
     const response = await fetch(`${API_URL}/cafes`, {
       method: 'POST',
@@ -111,20 +164,62 @@ export const createCafe = async (cafeData: Partial<Cafe>): Promise<Cafe | null> 
 
     if (!response.ok) {
       const error = await response.json();
+
       console.error('Cafe creation failed:', error);
+
       return null;
     }
 
     const result: CafeResponse = await response.json();
+
     return (result.data as Cafe) || null;
+
   } catch (error) {
+
     console.error('Error creating cafe:', error);
+
     return null;
   }
 };
+// export const createCafe = async (cafeData: Partial<Cafe>): Promise<Cafe | null> => {
+//   try {
+//     const response = await fetch(`${API_URL}/cafes`, {
+//       method: 'POST',
+//       headers: getHeaders(),
+//       body: JSON.stringify(cafeData)
+//     });
+
+//     if (!response.ok) {
+//       const error = await response.json();
+//       console.error('Cafe creation failed:', error);
+//       return null;
+//     }
+
+//     const result: CafeResponse = await response.json();
+//     return (result.data as Cafe) || null;
+//   } catch (error) {
+//     console.error('Error creating cafe:', error);
+//     return null;
+//   }
+// };
 
 // 5. Update cafe (owner only)
-export const updateCafe = async (cafeId: number, cafeData: Partial<Cafe>): Promise<Cafe | null> => {
+export interface UpdateCafeInput {
+  name_jp: string,
+  name_vn: string,
+  address: string,
+  phone_number: string,
+  cover_image_url: string,
+  amenities: {
+    has_ac?: boolean,
+    has_wifi?: boolean,
+    has_snacks?: boolean,
+    has_outlets?: boolean,
+    is_non_smoking?: boolean,
+    has_high_tables?: boolean,
+  },
+};
+export const updateCafe = async (cafeId: number, cafeData: UpdateCafeInput): Promise<Cafe | null> => {
   try {
     const response = await fetch(`${API_URL}/cafes/${cafeId}`, {
       method: 'PUT',
