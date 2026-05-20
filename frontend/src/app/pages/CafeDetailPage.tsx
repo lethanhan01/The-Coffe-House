@@ -19,36 +19,40 @@ const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d582
 
 const toBoolean = (value: boolean | number | null | undefined) => value === true || value === 1;
 
-const mapBackendCafe = (raw: any): Cafe => ({
-  id: String(raw.id),
-  name: raw.name_vn || raw.name_jp || '',
-  nameJP: raw.name_jp || raw.name_vn || '',
-  address: raw.address || '',
-  phone: raw.phone_number || '',
-  openingHours: [{ day: 'Mon-Sun', hours: raw.open_hours || '07:00 - 22:00' }],
-  isOpen: toBoolean(raw.is_open),
-  status: toBoolean(raw.is_crowded) ? 'crowded' : 'normal',
-  amenities: {
-    hasWifi: toBoolean(raw.has_wifi),
-    hasAC: toBoolean(raw.has_ac),
-    hasOutlet: toBoolean(raw.has_outlets),
-    noSmoking: toBoolean(raw.is_non_smoking),
-    hasSnacks: toBoolean(raw.has_snacks),
-    hasCoffee: toBoolean(raw.has_coffee),
-  },
-  menu: raw.menu_items?.map((item: any) => ({
-    id: String(item.id),
-    name: item.name_vn || item.name || '',
-    nameJP: item.name_jp || item.name || '',
-    price: item.price || 0,
-    category: item.category || '',
-  })) || [],
-  rating: raw.average_rating ?? 0,
-  reviewCount: raw.review_count ?? 0,
-  images: [raw.cover_image_url || DEFAULT_CAFE_IMAGE],
-  lat: raw.lat ?? raw.latitude ?? 0,
-  lng: raw.lng ?? raw.longitude ?? 0,
-});
+const mapBackendCafe = (raw: any): Cafe => {
+  const isAlreadyMapped = raw.isOpen !== undefined;
+  
+  return {
+    id: String(raw.id),
+    name: raw.name || raw.name_vn || raw.name_jp || '',
+    nameJP: raw.nameJP || raw.name_jp || raw.name_vn || '',
+    address: raw.address || '',
+    phone: raw.phone || raw.phone_number || '',
+    openingHours: raw.openingHours?.length ? raw.openingHours : [{ day: 'Mon-Sun', hours: raw.open_hours || '07:00 - 22:00' }],
+    isOpen: isAlreadyMapped ? raw.isOpen : toBoolean(raw.is_open),
+    status: raw.status || (toBoolean(raw.is_crowded) ? 'crowded' : 'normal'),
+    amenities: raw.amenities?.hasWifi !== undefined ? raw.amenities : {
+      hasWifi: toBoolean(raw.has_wifi),
+      hasAC: toBoolean(raw.has_ac),
+      hasOutlet: toBoolean(raw.has_outlets),
+      noSmoking: toBoolean(raw.is_non_smoking),
+      hasSnacks: toBoolean(raw.has_snacks),
+      hasCoffee: toBoolean(raw.has_coffee || raw.has_high_tables),
+    },
+    menu: raw.menu?.length ? raw.menu : (raw.menu_items?.map((item: any) => ({
+      id: String(item.id),
+      name: item.name_vn || item.name || '',
+      nameJP: item.name_jp || item.name || '',
+      price: item.price || 0,
+      category: item.category || '',
+    })) || []),
+    rating: raw.rating ?? raw.average_rating ?? 0,
+    reviewCount: raw.reviewCount ?? raw.review_count ?? 0,
+    images: raw.images?.length ? raw.images : [raw.cover_image_url || DEFAULT_CAFE_IMAGE],
+    lat: raw.lat ?? raw.latitude ?? 0,
+    lng: raw.lng ?? raw.longitude ?? 0,
+  };
+};
 
 export default function CafeDetailPage() {
   const { id } = useParams();
