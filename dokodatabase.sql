@@ -206,6 +206,7 @@ CREATE TABLE review_reports (
 ALTER TABLE cafes
 ADD COLUMN deletion_requested BOOLEAN DEFAULT FALSE,
 ADD COLUMN deletion_reason TEXT,
+ADD COLUMN deletion_request_status VARCHAR(20) DEFAULT NULL CHECK (deletion_request_status IN ('pending', 'approved', 'rejected')),
 ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 
 -- =========================================================================

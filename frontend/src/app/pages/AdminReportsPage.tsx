@@ -13,9 +13,10 @@ import {
 } from '../components/ui/dialog';
 import {
   Coffee, Users, Store, AlertTriangle, BarChart3, User,
-  FileText, Trash2, CheckCircle, XCircle, Eye,
+  CheckCircle, XCircle, Eye,
   Calendar, Clock, Flag, ChevronRight,
 } from 'lucide-react';
+import { getAllReports, updateReportStatus } from '../services/adminService';
 
 /* ── Types ── */
 type ReportType = 'review_complaint' | 'cafe_delete';
@@ -30,128 +31,15 @@ interface Report {
   titleJP: string;
   description: string;
   descriptionJP: string;
-  cafeName: string;
-  cafeNameJP: string;
-  reporterName: string;
-  targetInfo: string;
-  targetInfoJP: string;
+  cafeName: string | null;
+  cafeNameJP: string | null;
+  reporterName: string | null;
+  targetInfo: string | null;
+  targetInfoJP: string | null;
   createdAt: string;
 }
 
 /* ── Seed mock reports (stored in localStorage under 'reports') ── */
-const MOCK_REPORTS: Report[] = [
-  {
-    id: 'rep1',
-    type: 'review_complaint',
-    status: 'active',
-    title: 'Khiếu nại đánh giá sai sự thật',
-    titleJP: '虚偽レビューへの申し立て',
-    description:
-      'Đánh giá của người dùng "匿名ユーザー" chứa nội dung xúc phạm và hoàn toàn sai sự thật về quán. Người dùng này chưa từng đến quán nhưng vẫn đăng review 1 sao. Đề nghị admin xem xét và xóa đánh giá này.',
-    descriptionJP:
-      '「匿名ユーザー」のレビューは侮辱的な内容が含まれており、事実に反しています。このユーザーは来店したことがないにもかかわらず1つ星のレビューを投稿しました。管理者に削除を依頼します。',
-    cafeName: 'The Coffee House Tràng Tiền',
-    cafeNameJP: 'ザ・コーヒーハウス チャンティエン店',
-    reporterName: 'Nguyễn Văn An',
-    targetInfo: 'Review #5 — 匿名ユーザー (★1)',
-    targetInfoJP: 'レビュー #5 — 匿名ユーザー (★1)',
-    createdAt: '2026-04-02T09:30:00Z',
-  },
-  {
-    id: 'rep2',
-    type: 'cafe_delete',
-    status: 'active',
-    title: 'Yêu cầu xóa quán khỏi hệ thống',
-    titleJP: 'システムからのカフェ削除依頼',
-    description:
-      'Quán Highlands Coffee Hai Bà Trưng đã ngừng hoạt động từ đầu tháng 3/2026. Địa điểm này hiện đã chuyển đổi thành cửa hàng khác. Việc giữ thông tin cũ gây nhầm lẫn cho khách hàng Nhật Bản.',
-    descriptionJP:
-      'ハイランズコーヒー ハイバーチュン店は2026年3月初頭に閉店しました。この場所は現在別の店舗に変わっています。古い情報を残しておくと日本人客に混乱を招きます。',
-    cafeName: 'Highlands Coffee Hai Bà Trưng',
-    cafeNameJP: 'ハイランズコーヒー ハイバーチュン店',
-    reporterName: '田中太郎',
-    targetInfo: 'Highlands Coffee Hai Bà Trưng — ID #2',
-    targetInfoJP: 'ハイランズコーヒー ハイバーチュン店 — ID #2',
-    createdAt: '2026-04-01T14:20:00Z',
-  },
-  {
-    id: 'rep3',
-    type: 'review_complaint',
-    status: 'active',
-    title: 'Báo cáo review spam liên tục',
-    titleJP: '連続スパムレビューの報告',
-    description:
-      'Người dùng "競合店オーナー" đã đăng nhiều review 1-2 sao trong thời gian ngắn mà không có lý do hợp lệ. Hành vi này ảnh hưởng nghiêm trọng đến uy tín của quán và cần được xử lý gấp.',
-    descriptionJP:
-      '「競合店オーナー」というユーザーが短期間に正当な理由なく多数の1〜2つ星レビューを投稿しました。この行為は店舗の評判に深刻な影響を与えており、早急な対応が必要です。',
-    cafeName: 'Cộng Cà Phê Đinh Tiên Hoàng',
-    cafeNameJP: 'コンカフェ ディンティエンホアン店',
-    reporterName: 'Lê Thị Hoa',
-    targetInfo: 'Review #7 — 競合店オーナー (★2)',
-    targetInfoJP: 'レビュー #7 — 競合店オーナー (★2)',
-    createdAt: '2026-03-30T16:45:00Z',
-  },
-  {
-    id: 'rep4',
-    type: 'review_complaint',
-    status: 'resolved',
-    title: 'Khiếu nại nội dung không phù hợp',
-    titleJP: '不適切なコンテンツの申し立て',
-    description:
-      'Review chứa ngôn ngữ thô tục và hình ảnh không phù hợp. Đề nghị xóa ngay lập tức theo chính sách cộng đồng của hệ thống.',
-    descriptionJP:
-      'レビューに粗野な言葉と不適切な画像が含まれています。システムのコミュニティポリシーに従い、即時削除を依頼します。',
-    cafeName: 'The Coffee House Tràng Tiền',
-    cafeNameJP: 'ザ・コーヒーハウス チャンティエン店',
-    reporterName: 'Suzuki Haruto',
-    targetInfo: 'Review #12 — ユーザーABC (★1)',
-    targetInfoJP: 'レビュー #12 — ユーザーABC (★1)',
-    createdAt: '2026-03-25T10:00:00Z',
-  },
-  {
-    id: 'rep5',
-    type: 'cafe_delete',
-    status: 'rejected',
-    title: 'Yêu cầu xóa quán – quán vẫn hoạt động',
-    titleJP: 'カフェ削除依頼 — 営業中のため却下',
-    description:
-      'Người dùng yêu cầu xóa quán Cộng Cà Phê nhưng sau khi kiểm tra thực tế, quán vẫn đang hoạt động bình thường. Đơn này bị từ chối.',
-    descriptionJP:
-      'ユーザーがコンカフェの削除を依頼しましたが、実際に確認したところ通常通り営業中でした。この申請は却下されました。',
-    cafeName: 'Cộng Cà Phê Đinh Tiên Hoàng',
-    cafeNameJP: 'コンカフェ ディンティエンホアン店',
-    reporterName: 'Nakamura Yuki',
-    targetInfo: 'Cộng Cà Phê Đinh Tiên Hoàng — ID #3',
-    targetInfoJP: 'コンカフェ ディンティエンホアン店 — ID #3',
-    createdAt: '2026-03-20T08:15:00Z',
-  },
-  {
-    id: 'rep6',
-    type: 'review_complaint',
-    status: 'resolved',
-    title: 'Báo cáo review giả mạo thông tin',
-    titleJP: '情報捏造レビューの報告',
-    description:
-      'Review này đề cập sai thông tin giá tiền và chất lượng sản phẩm. Người dùng cố ý tạo ra thông tin sai lệch để gây hại cho quán.',
-    descriptionJP:
-      'このレビューは価格と製品品質について誤った情報を記載しています。ユーザーは意図的に誤解を招く情報を作成して店舗を傷つけようとしています。',
-    cafeName: 'Highlands Coffee Hai Bà Trưng',
-    cafeNameJP: 'ハイランズコーヒー ハイバーチュン店',
-    reporterName: 'Phạm Văn Đức',
-    targetInfo: 'Review #9 — 山田次郎 (★1)',
-    targetInfoJP: 'レビュー #9 — 山田次郎 (★1)',
-    createdAt: '2026-03-15T13:30:00Z',
-  },
-];
-
-/* ── seed helper ── */
-function seedReports() {
-  if (!localStorage.getItem('reports')) {
-    localStorage.setItem('reports', JSON.stringify(MOCK_REPORTS));
-  }
-  return JSON.parse(localStorage.getItem('reports')!) as Report[];
-}
-
 /* ── Component ── */
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -161,6 +49,7 @@ export default function AdminReportsPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeReports, setActiveReports] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { logout } = useAuth();
   const { language } = useLanguage();
@@ -169,9 +58,27 @@ export default function AdminReportsPage() {
 
   /* load */
   useEffect(() => {
-    const data = seedReports();
-    setReports(data);
-    setActiveReports(data.filter((r) => r.status === 'active').length);
+    const loadReports = async () => {
+      try {
+        const data = await getAllReports();
+        if (!data) {
+          setLoadError(language === 'jp'
+            ? 'レポートを読み込めませんでした。アクセストークンを確認してください。'
+            : 'Không thể tải báo cáo. Vui lòng kiểm tra quyền truy cập.');
+          setReports([]);
+          setActiveReports(0);
+          return;
+        }
+        setReports(data);
+        setActiveReports(data.filter((r) => r.status === 'active').length);
+        setLoadError(null);
+      } catch (error: any) {
+        console.error('Failed to load reports:', error);
+        setLoadError(error?.message || 'Failed to load reports');
+      }
+    };
+
+    loadReports();
   }, []);
 
   /* helpers */
@@ -195,10 +102,15 @@ export default function AdminReportsPage() {
   });
 
   /* approve / reject */
-  const handleAction = (id: string, action: 'resolved' | 'rejected') => {
+  const handleAction = async (id: string, action: 'resolved' | 'rejected') => {
+    const success = await updateReportStatus(id, action);
+    if (!success) {
+      console.error('Failed to update report status');
+      return;
+    }
+
     const updated = reports.map((r) => (r.id === id ? { ...r, status: action } : r));
     setReports(updated);
-    localStorage.setItem('reports', JSON.stringify(updated));
     setActiveReports(updated.filter((r) => r.status === 'active').length);
     if (selectedReport?.id === id) setSelectedReport({ ...selectedReport, status: action });
   };
@@ -367,6 +279,11 @@ export default function AdminReportsPage() {
           </div>
 
           {/* ── Table ── */}
+          {loadError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+              {loadError}
+            </div>
+          )}
           <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -581,12 +498,12 @@ export default function AdminReportsPage() {
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <span className="mt-0.5 shrink-0">{icon}</span>
       <span className="text-gray-500 w-28 shrink-0">{label}</span>
-      <span className="text-gray-800 font-medium">{value}</span>
+      <span className="text-gray-800 font-medium">{value ?? '-'}</span>
     </div>
   );
 }

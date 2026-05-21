@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getCafes, type Cafe } from '../utils/mockData';
+import { type Cafe, getAllCafes } from '../services/cafeService';
+import { getAllUsers, getAdminStats } from '../services/adminService';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { LanguageToggle } from '../components/LanguageToggle';
@@ -41,35 +42,30 @@ export default function AdminCafeManagementPage() {
   const location = useLocation();
 
   useEffect(() => {
-    // Load cafes
-    const cafes = getCafes();
-    setAllCafes(cafes);
+    const loadAdminData = async () => {
+      try {
+        const cafes = await getAllCafes();
+        const users = await getAllUsers();
+        const stats = await getAdminStats();
 
-    // Load owner mapping: cafeId -> userId -> userName
-    const cafeOwnersJson = localStorage.getItem('cafeOwners');
-    const cafeOwners: Record<string, string> = cafeOwnersJson
-      ? JSON.parse(cafeOwnersJson)
-      : {};
+        const loadedCafes = cafes || [];
+        setAllCafes(loadedCafes);
 
-    const usersJson = localStorage.getItem('users');
-    const users: UserRecord[] = usersJson ? JSON.parse(usersJson) : [];
+        const ownerNames: Record<string, string> = {};
+        loadedCafes.forEach((cafe) => {
+          const ownerId = String(cafe.owner_id ?? '');
+          const owner = users?.find((u) => String(u.id) === ownerId);
+          ownerNames[cafe.id] = owner?.name ?? '—';
+        });
+        setOwners(ownerNames);
 
-    const ownerNames: Record<string, string> = {};
-    cafes.forEach((cafe) => {
-      const ownerId = cafeOwners[cafe.id];
-      if (ownerId) {
-        const owner = users.find((u) => u.id === ownerId);
-        ownerNames[cafe.id] = owner?.name ?? '—';
-      } else {
-        ownerNames[cafe.id] = '—';
+        setActiveReports(stats?.activeReports ?? 0);
+      } catch (error) {
+        console.error('Failed to load admin cafe data:', error);
       }
-    });
-    setOwners(ownerNames);
+    };
 
-    // Reports badge
-    const reportsJson = localStorage.getItem('reports');
-    const reports = reportsJson ? JSON.parse(reportsJson) : [];
-    setActiveReports(reports.filter((r: any) => r.status === 'active').length);
+    loadAdminData();
   }, []);
 
   /* ── helpers ── */

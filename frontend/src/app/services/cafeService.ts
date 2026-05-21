@@ -241,6 +241,27 @@ export const updateCafe = async (cafeId: number, cafeData: UpdateCafeInput): Pro
   }
 };
 
+export const requestCafeDeletion = async (cafeId: number, reason: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_URL}/cafes/${cafeId}/request-deletion`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ reason })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Cafe deletion request failed:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error requesting cafe deletion:', error);
+    return false;
+  }
+};
+
 // 6. Delete cafe (owner only)
 export const deleteCafe = async (cafeId: number): Promise<boolean> => {
   try {

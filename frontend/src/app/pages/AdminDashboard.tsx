@@ -7,6 +7,7 @@ import {
   Coffee, Users, Store, AlertTriangle, BarChart3, User, TrendingUp,
 } from 'lucide-react';
 import { LanguageToggle } from '../components/LanguageToggle';
+import { getAdminStats, type AdminStats } from '../services/adminService';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -22,16 +23,14 @@ export default function AdminDashboard() {
   const location = useLocation();
 
   useEffect(() => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const cafes = JSON.parse(localStorage.getItem('cafes') || '[]');
-    const reports = JSON.parse(localStorage.getItem('reports') || '[]');
-    const active = reports.filter((r: any) => r.status === 'active');
-    setStats({
-      totalUsers: users.length,
-      totalCafes: cafes.length,
-      totalReports: reports.length,
-      activeReports: active.length,
-    });
+    const loadStats = async () => {
+      const stats = await getAdminStats();
+      if (stats) {
+        setStats(stats);
+      }
+    };
+
+    loadStats();
   }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };

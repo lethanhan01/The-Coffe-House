@@ -77,6 +77,32 @@ export const updateCafe = async (req: Request, res: Response) => {
     }
 };
 
+export const requestCafeDeletion = async (req: Request, res: Response) => {
+    try {
+        const cafeId = parseInt(req.params.id as string);
+        const ownerId = req.user?.id;
+        const { reason } = req.body;
+
+        if (!ownerId) {
+            return res.status(401).json({ success: false, message: 'Không có quyền thực hiện hành động này' });
+        }
+
+        if (!reason || typeof reason !== 'string' || !reason.trim()) {
+            return res.status(400).json({ success: false, message: 'Lý do yêu cầu xóa quán không được để trống' });
+        }
+
+        const result = await cafeService.requestCafeDeletion(cafeId, ownerId, reason.trim());
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy quán hoặc bạn không có quyền' });
+        }
+
+        res.status(200).json({ success: true, message: 'Yêu cầu xóa quán đã gửi thành công' });
+    } catch (error: any) {
+        console.error('Lỗi gửi yêu cầu xóa quán:', error);
+        res.status(500).json({ success: false, message: error.message || 'Lỗi khi gửi yêu cầu xóa quán' });
+    }
+};
+
 // API: Xóa quán (DELETE)
 export const deleteCafe = async (req: Request, res: Response) => {
     try {

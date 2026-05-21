@@ -16,7 +16,7 @@ import { StaffDetailDialog } from '../components/StaffDetailDialog';
 import { AddStaffDialog } from '../components/AddStaffDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
-import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe } from '../services/cafeService';
+import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe, requestCafeDeletion } from '../services/cafeService';
 export default function OwnerCafeDetailPage() {
   const { id } = useParams();
   const [cafe, setCafe] = useState<Cafe | null>(null);
@@ -242,27 +242,15 @@ export default function OwnerCafeDetailPage() {
     }
   };
 
-  const handleSubmitDeleteRequest = () => {
+  const handleSubmitDeleteRequest = async () => {
     if (!deleteReason.trim() || !id || !cafe) return;
 
-    const reportsJson = localStorage.getItem('reports');
-    const allReports = reportsJson ? JSON.parse(reportsJson) : [];
-    const newReport = {
-      id: `rep-${Date.now()}`,
-      type: 'cafe_delete',
-      status: 'active',
-      title: `Yêu cầu xóa quán: ${cafe.name}`,
-      titleJP: `カフェ削除依頼：${cafe.nameJP}`,
-      description: deleteReason,
-      descriptionJP: deleteReason,
-      cafeName: cafe.name,
-      cafeNameJP: cafe.nameJP,
-      reporterName: user?.name || user?.email || 'Chủ quán',
-      targetInfo: `${cafe.name} — ID #${id}`,
-      targetInfoJP: `${cafe.nameJP} — ID #${id}`,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('reports', JSON.stringify([...allReports, newReport]));
+    const cafeId = parseInt(id, 10);
+    const success = await requestCafeDeletion(cafeId, deleteReason.trim());
+    if (!success) {
+      return;
+    }
+
     setDeleteSubmitted(true);
   };
 
