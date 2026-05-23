@@ -468,24 +468,24 @@ export default function StaffCafeDetailPage() {
                   <div className="flex">
                     <div className="w-48 h-48 flex-shrink-0">
                       <img
-                        src={promotion.image}
-                        alt={language === 'jp' ? promotion.titleJP : promotion.title}
+                        src={promotion.imageUrl || promotion.image || 'https://images.unsplash.com/photo-1559056199-641a0ac8b3f4'}
+                        alt={language === 'jp' ? (promotion.titleJp || promotion.titleJP) : promotion.title}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="flex-1 p-4 flex flex-col justify-between">
                       <div>
                         <h4 className="font-semibold text-lg mb-2">
-                          {language === 'jp' ? promotion.titleJP : promotion.title}
+                          {language === 'jp' ? (promotion.titleJp || promotion.titleJP) : promotion.title}
                         </h4>
                         <p className="text-gray-600 text-sm mb-3">
-                          {language === 'jp' ? promotion.descriptionJP : promotion.description}
+                          {language === 'jp' ? (promotion.descriptionJp || promotion.descriptionJP) : promotion.description}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Clock className="size-4" />
                           <span>
                             {language === 'jp' ? '有効期限: ' : 'Có hiệu lực đến: '}
-                            {new Date(promotion.validUntil).toLocaleDateString(language === 'jp' ? 'ja-JP' : 'vi-VN')}
+                            {formatPromotionDate(promotion.validUntil, language === 'jp' ? 'jp' : 'vn')}
                           </span>
                         </div>
                       </div>

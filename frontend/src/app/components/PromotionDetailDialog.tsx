@@ -1,18 +1,12 @@
 import { useLanguage } from '../contexts/LanguageContext';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Clock } from 'lucide-react';
+import { type Promotion, formatPromotionDate } from '../services/promotionService';
 
 interface PromotionDetailDialogProps {
   open: boolean;
   onClose: () => void;
-  promotion: {
-    title: string;
-    titleJP: string;
-    description: string;
-    descriptionJP: string;
-    image: string;
-    validUntil: string;
-  };
+  promotion: Promotion;
 }
 
 export function PromotionDetailDialog({ open, onClose, promotion }: PromotionDetailDialogProps) {
@@ -24,8 +18,8 @@ export function PromotionDetailDialog({ open, onClose, promotion }: PromotionDet
         {/* Promotion Image */}
         <div className="w-full h-[40vh]">
           <img
-            src={promotion.image}
-            alt={language === 'jp' ? promotion.titleJP : promotion.title}
+            src={promotion.imageUrl || 'https://images.unsplash.com/photo-1559056199-641a0ac8b3f4'}
+            alt={language === 'jp' ? promotion.titleJp : promotion.title}
             className="w-full h-full object-cover"
           />
         </div>
@@ -33,18 +27,18 @@ export function PromotionDetailDialog({ open, onClose, promotion }: PromotionDet
         {/* Promotion Content */}
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-3">
-            {language === 'jp' ? promotion.titleJP : promotion.title}
+            {language === 'jp' ? promotion.titleJp : promotion.title}
           </h2>
           
           <p className="text-gray-700 mb-4 whitespace-pre-wrap">
-            {language === 'jp' ? promotion.descriptionJP : promotion.description}
+            {language === 'jp' ? promotion.descriptionJp : promotion.description}
           </p>
 
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Clock className="size-4" />
             <span>
               {language === 'jp' ? '有効期限: ' : 'Có hiệu lực đến: '}
-              {new Date(promotion.validUntil).toLocaleDateString(language === 'jp' ? 'ja-JP' : 'vi-VN')}
+              {formatPromotionDate(promotion.validUntil, language === 'jp' ? 'jp' : 'vn')}
             </span>
           </div>
         </div>

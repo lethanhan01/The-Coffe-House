@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getCafes, getPromotions, type Cafe, type Promotion } from '../utils/mockData';
+import { getCafes, type Cafe } from '../utils/mockData';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -15,6 +15,7 @@ import { Search, Filter, MapPin, Star, X, Wifi, Wind, Plug, Armchair } from 'luc
 import ProfileDialog from '../components/ProfileDialog';
 import NotificationsDialog from '../components/NotificationsDialog';
 import MapView from '../components/MapView';
+import { getActivePromotions, type Promotion, formatPromotionDate } from '../services/promotionService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
@@ -135,7 +136,11 @@ export default function HomePage() {
   // }, [user, navigate]);
 
   useEffect(() => {
-    setPromotions(getPromotions());
+    const loadPromotions = async () => {
+      const activePromos = await getActivePromotions();
+      setPromotions(activePromos || []);
+    };
+    loadPromotions();
   }, []);
 
   const searchCafes = async (keywordValue = searchQuery, filterValue = filters) => {
@@ -459,14 +464,14 @@ export default function HomePage() {
               />
               <div>
                 <h3 className="text-xl font-bold mb-2">
-                  {language === 'jp' ? selectedPromotion.titleJP : selectedPromotion.title}
+                  {language === 'jp' ? selectedPromotion.titleJp : selectedPromotion.title}
                 </h3>
                 <p className="text-gray-600">
-                  {language === 'jp' ? selectedPromotion.descriptionJP : selectedPromotion.description}
+                  {language === 'jp' ? selectedPromotion.descriptionJp : selectedPromotion.description}
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
                   {language === 'jp' ? '有効期限: ' : 'Có hiệu lực đến: '}
-                  {new Date(selectedPromotion.validUntil).toLocaleDateString(language === 'jp' ? 'ja-JP' : 'vi-VN')}
+                  {formatPromotionDate(selectedPromotion.validUntil, language === 'jp' ? 'jp' : 'vn')}
                 </p>
               </div>
             </div>

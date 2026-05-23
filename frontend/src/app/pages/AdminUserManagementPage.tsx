@@ -15,76 +15,17 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
+import { getAllUsers, getAdminStats } from '../services/adminService';
 
 interface UserRecord {
   id: string;
   name: string;
   email: string;
   role: 1 | 2 | 3 | 4;
-  phone?: string;
+  phone: string | null;
   avatar?: string;
   password?: string;
 }
-
-// Extended mock users to make table richer
-const EXTRA_MOCK_USERS: UserRecord[] = [
-  {
-    id: '6',
-    name: 'Yamamoto Kenji',
-    email: 'kenji.yamamoto@test.com',
-    role: 1,
-    phone: '0912345678',
-  },
-  {
-    id: '7',
-    name: 'Lê Thị Hoa',
-    email: 'hoa@cafehanoi.com',
-    role: 2,
-    phone: '0923456789',
-  },
-  {
-    id: '8',
-    name: 'Suzuki Haruto',
-    email: 'haruto.suzuki@test.com',
-    role: 1,
-    phone: '0934567890',
-  },
-  {
-    id: '9',
-    name: 'Phạm Văn Đức',
-    email: 'duc.pham@cafewest.com',
-    role: 4,
-    phone: '0945678901',
-  },
-  {
-    id: '10',
-    name: 'Nakamura Yuki',
-    email: 'yuki.nakamura@test.com',
-    role: 1,
-    phone: '0956789012',
-  },
-  {
-    id: '11',
-    name: 'Hoàng Thị Lan',
-    email: 'lan@caffepremium.com',
-    role: 2,
-    phone: '0967890123',
-  },
-  {
-    id: '12',
-    name: 'Itou Ryusei',
-    email: 'ryusei.itou@test.com',
-    role: 1,
-    phone: '0978901234',
-  },
-  {
-    id: '13',
-    name: 'Vũ Minh Khoa',
-    email: 'khoa@staffcafe.com',
-    role: 4,
-    phone: '0989012345',
-  },
-];
 
 const ROLE_CONFIG: Record<
   number,
@@ -129,23 +70,17 @@ export default function AdminUserManagementPage() {
   const location = useLocation();
 
   useEffect(() => {
-    // Load from localStorage (seeded by AuthContext) + extra mock
-    const usersJson = localStorage.getItem('users');
-    const storedUsers: UserRecord[] = usersJson ? JSON.parse(usersJson) : [];
+    const loadAdminData = async () => {
+      try {
+        const [users, stats] = await Promise.all([getAllUsers(), getAdminStats()]);
+        setAllUsers(users || []);
+        setAdminStats({ activeReports: stats?.activeReports ?? 0 });
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+      }
+    };
 
-    // Merge stored with extra mocks (avoid duplicates by id)
-    const storedIds = new Set(storedUsers.map((u) => u.id));
-    const merged = [
-      ...storedUsers,
-      ...EXTRA_MOCK_USERS.filter((u) => !storedIds.has(u.id)),
-    ];
-    setAllUsers(merged);
-
-    // Load report stats for sidebar badge
-    const reportsJson = localStorage.getItem('reports');
-    const reports = reportsJson ? JSON.parse(reportsJson) : [];
-    const activeReports = reports.filter((r: any) => r.status === 'active').length;
-    setAdminStats({ activeReports });
+    loadAdminData();
   }, []);
 
   const handleLogout = () => {
@@ -365,6 +300,9 @@ export default function AdminUserManagementPage() {
                       {language === 'jp' ? 'ユーザー名' : 'Tên người dùng'}
                     </th>
                     <th className="text-left py-3 px-4">Email</th>
+                    <th className="text-left py-3 px-4">
+                      {language === 'jp' ? '電話番号' : 'Số điện thoại'}
+                    </th>
                     <th className="text-center py-3 px-4">
                       {language === 'jp' ? '役割' : 'Vai trò'}
                     </th>
@@ -419,6 +357,9 @@ export default function AdminUserManagementPage() {
                           {/* Email */}
                           <td className="py-3.5 px-4 text-gray-600">
                             {u.email}
+                          </td>
+                          <td className="py-3.5 px-4 text-gray-600">
+                            {u.phone || '—'}
                           </td>
 
                           {/* Role badge */}

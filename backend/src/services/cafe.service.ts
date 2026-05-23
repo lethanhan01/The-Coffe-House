@@ -264,6 +264,31 @@ export const updateCafe = async (
 
     return true;
 };
+
+export const requestCafeDeletion = async (
+    cafeId: number,
+    ownerId: number,
+    reason: string
+) => {
+    const { data, error } = await supabase
+        .from('cafes')
+        .update({
+            deletion_requested: true,
+            deletion_request_status: 'pending',
+            deletion_reason: reason,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', cafeId)
+        .eq('owner_id', ownerId)
+        .select('id')
+        .single();
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return Boolean(data);
+};
 // export const updateCafe = async (cafeId: number, updateData: any) => {
 //     const { is_open, is_crowded } = updateData;
 

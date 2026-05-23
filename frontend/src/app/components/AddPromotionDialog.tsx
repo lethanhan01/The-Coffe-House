@@ -4,13 +4,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
-import { autoTranslate } from '../utils/mockData';
+import { createPromotion } from '../services/promotionService';
 
 interface AddPromotionDialogProps {
   open: boolean;
   onClose: () => void;
   cafeId: string;
-  onSubmit: (data: {
+  onSubmit?: (data: {
     title: string;
     titleJP: string;
     description: string;
@@ -18,17 +18,21 @@ interface AddPromotionDialogProps {
     image: string;
     duration: string;
   }) => void;
+  onSuccess?: () => void;
 }
 
-export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromotionDialogProps) {
+export function AddPromotionDialog({ open, onClose, cafeId, onSubmit, onSuccess }: AddPromotionDialogProps) {
   const { language } = useLanguage();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [titleVN, setTitleVN] = useState('');
+  const [titleJP, setTitleJP] = useState('');
+  const [descriptionVN, setDescriptionVN] = useState('');
+  const [descriptionJP, setDescriptionJP] = useState('');
   const [image, setImage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [duration, setDuration] = useState('7');
   const [error, setError] = useState('');
-  const [inputLanguage, setInputLanguage] = useState<'vn' | 'jp'>('vn'); // Default to Vietnamese
+  const [inputLanguage, setInputLanguage] = useState<'vn' | 'jp'>('vn');
+  const [isLoading, setIsLoading] = useState(false);
 
   const durations = [
     { value: '1', label: language === 'jp' ? '24時間' : '24 giờ' },
@@ -65,17 +69,16 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!title.trim()) {
+    if (!titleVN.trim() || !titleJP.trim()) {
       setError(language === 'jp' ? 'タイトルを入力してください' : 'Vui lòng nhập tiêu đề');
       return;
     }
 
-    if (!description.trim()) {
+    if (!descriptionVN.trim() || !descriptionJP.trim()) {
       setError(language === 'jp' ? '説明を入力してください' : 'Vui lòng nhập mô tả');
       return;
     }
@@ -85,32 +88,65 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
       return;
     }
 
-    // Auto-translate based on input language
-    const titleVN = inputLanguage === 'vn' ? title.trim() : autoTranslate(title.trim(), 'jp', 'vn');
-    const titleJP = inputLanguage === 'jp' ? title.trim() : autoTranslate(title.trim(), 'vn', 'jp');
-    const descriptionVN = inputLanguage === 'vn' ? description.trim() : autoTranslate(description.trim(), 'jp', 'vn');
-    const descriptionJP = inputLanguage === 'jp' ? description.trim() : autoTranslate(description.trim(), 'vn', 'jp');
+    const daysToAdd = parseInt(duration);
+    const validUntilDate = new Date();
+    validUntilDate.setDate(validUntilDate.getDate() + daysToAdd);
+    const validUntil = validUntilDate.toISOString().split('T')[0];
 
-    onSubmit({
-      title: titleVN,
-      titleJP: titleJP,
-      description: descriptionVN,
-      descriptionJP: descriptionJP,
-      image: image.trim(),
-      duration,
-    });
+    setIsLoading(true);
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setImage('');
-    setDuration('7');
-    setError('');
+    try {
+      const result = await createPromotion({
+        cafe_id: parseInt(cafeId),
+        title: titleVN.trim(),
+        title_jp: titleJP.trim(),
+        description: descriptionVN.trim(),
+        description_jp: descriptionJP.trim(),
+        image_url: image.trim(),
+        valid_until: validUntil
+      });
+
+      if (!result) {
+        setError(language === 'jp' ? 'プロモーションの作成に失敗しました' : 'Thêm khuyến mãi thất bại');
+        setIsLoading(false);
+        return;
+      }
+
+      if (onSubmit) {
+        onSubmit({
+          title: titleVN.trim(),
+          titleJP: titleJP.trim(),
+          description: descriptionVN.trim(),
+          descriptionJP: descriptionJP.trim(),
+          image: image.trim(),
+          duration,
+        });
+      }
+
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      setTitleVN('');
+      setTitleJP('');
+      setDescriptionVN('');
+      setDescriptionJP('');
+      setImage('');
+      setDuration('7');
+      setError('');
+      handleClose();
+    } catch (err) {
+      setError(language === 'jp' ? 'エラーが発生しました' : 'Có lỗi xảy ra');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
-    setTitle('');
-    setDescription('');
+    setTitleVN('');
+    setTitleJP('');
+    setDescriptionVN('');
+    setDescriptionJP('');
     setImage('');
     setDuration('7');
     setError('');
@@ -128,7 +164,7 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Language Selection */}
+          {/* Language Selection Buttons */}
           <div>
             <Label>{language === 'jp' ? '入力言語' : 'Ngôn ngữ nhập liệu'}</Label>
             <div className="flex gap-2 mt-1">
@@ -139,7 +175,7 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
                 onClick={() => setInputLanguage('vn')}
                 className={inputLanguage === 'vn' ? 'bg-amber-700 hover:bg-amber-800' : ''}
               >
-                Tiếng Việt
+                {language === 'jp' ? 'ベトナム語' : 'Tiếng Việt'}
               </Button>
               <Button
                 type="button"
@@ -148,14 +184,9 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
                 onClick={() => setInputLanguage('jp')}
                 className={inputLanguage === 'jp' ? 'bg-amber-700 hover:bg-amber-800' : ''}
               >
-                日本語
+                {language === 'jp' ? '日本語' : 'Tiếng Nhật'}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {language === 'jp' 
-                ? 'システムが自動的にもう一つの言語に翻訳します' 
-                : 'Hệ thống sẽ tự động dịch sang ngôn ngữ còn lại'}
-            </p>
           </div>
 
           {/* Title */}
@@ -166,8 +197,14 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
             <input
               id="title"
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={inputLanguage === 'vn' ? titleVN : titleJP}
+              onChange={(e) => {
+                if (inputLanguage === 'vn') {
+                  setTitleVN(e.target.value);
+                } else {
+                  setTitleJP(e.target.value);
+                }
+              }}
               placeholder={
                 inputLanguage === 'vn' 
                   ? 'Ví dụ: Giảm 20% tất cả đồ uống' 
@@ -184,8 +221,14 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
             </Label>
             <textarea
               id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={inputLanguage === 'vn' ? descriptionVN : descriptionJP}
+              onChange={(e) => {
+                if (inputLanguage === 'vn') {
+                  setDescriptionVN(e.target.value);
+                } else {
+                  setDescriptionJP(e.target.value);
+                }
+              }}
               placeholder={
                 inputLanguage === 'vn'
                   ? 'Mô tả chi tiết về chương trình khuyến mãi...'
@@ -222,15 +265,15 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
             )}
             <p className="text-xs text-gray-500 mt-1">
               {language === 'jp' 
-                ? 'Unsplashなどの画像URLを入力してください' 
-                : 'Sử dụng URL từ Unsplash hoặc nguồn ảnh khác'}
+                ? 'Unsplashなどから画像URLを入力（オプション）' 
+                : 'URL từ Unsplash hoặc nguồn ảnh khác (tùy chọn)'}
             </p>
           </div>
 
           {/* Image Upload */}
           <div>
             <Label htmlFor="imageUpload">
-              {language === 'jp' ? '画像アップロード' : 'Tải ảnh lên'} *
+              {language === 'jp' ? '画像アップロード' : 'Tải ảnh lên'}
             </Label>
             <input
               id="imageUpload"
@@ -241,9 +284,9 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
             />
             {imageFile && (
               <div className="mt-2">
-                <img 
-                  src={image} 
-                  alt="Preview" 
+                <img
+                  src={image}
+                  alt="Preview"
                   className="w-full h-40 object-cover rounded-lg"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -252,9 +295,9 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
               </div>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              {language === 'jp' 
-                ? '5MB以下の画像ファイルを選択してください' 
-                : 'Chọn file ảnh dưới 5MB'}
+              {language === 'jp'
+                ? '5MB以下の画像ファイルを選択（オプション）' 
+                : 'Chọn file ảnh dưới 5MB (tùy chọn)'}
             </p>
           </div>
 
@@ -282,10 +325,10 @@ export function AddPromotionDialog({ open, onClose, cafeId, onSubmit }: AddPromo
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               {language === 'jp' ? 'キャンセル' : 'Hủy'}
             </Button>
-            <Button type="submit" className="bg-amber-700 hover:bg-amber-800">
+            <Button type="submit" className="bg-amber-700 hover:bg-amber-800" disabled={isLoading}>
               <ImagePlus className="size-4 mr-2" />
               {language === 'jp' ? '追加' : 'Thêm khuyến mãi'}
             </Button>

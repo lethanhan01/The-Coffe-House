@@ -16,13 +16,15 @@ import { StaffDetailDialog } from '../components/StaffDetailDialog';
 import { AddStaffDialog } from '../components/AddStaffDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
-import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe } from '../services/cafeService';
+import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe, requestCafeDeletion } from '../services/cafeService';
+import { getCafePromotions, deletePromotion, type Promotion as PromotionType, formatPromotionDate } from '../services/promotionService';
+
 export default function OwnerCafeDetailPage() {
   const { id } = useParams();
   const [cafe, setCafe] = useState<Cafe | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promotions, setPromotions] = useState<PromotionType[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activeTab, setActiveTab] = useState('info');
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -30,7 +32,7 @@ export default function OwnerCafeDetailPage() {
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showAddPromotionDialog, setShowAddPromotionDialog] = useState(false);
   const [showPromotionDetailDialog, setShowPromotionDetailDialog] = useState(false);
-  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
+  const [selectedPromotion, setSelectedPromotion] = useState<PromotionType | null>(null);
   const [showAddStaffDialog, setShowAddStaffDialog] = useState(false);
   const [showStaffDetailDialog, setShowStaffDetailDialog] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
@@ -79,12 +81,10 @@ export default function OwnerCafeDetailPage() {
       console.log('Cafe bookings for cafe', id, ':', cafeBookings);
       setBookings(cafeBookings);
 
-      // Load promotions for this cafe
-      const allPromotions = getPromotions();
-      const cafePromotions = allPromotions.filter(p => p.cafeId === id);
-      console.log('All promotions:', allPromotions);
-      console.log('Cafe promotions for cafe', id, ':', cafePromotions);
-      setPromotions(cafePromotions);
+      // Load promotions for this cafe from API
+      const cafePromos = await getCafePromotions(parseInt(id));
+      console.log('Cafe promotions for cafe', id, ':', cafePromos);
+      setPromotions(cafePromos || []);
 
       // Load staff for this cafe
       const allStaff = getStaff();
@@ -242,27 +242,15 @@ export default function OwnerCafeDetailPage() {
     }
   };
 
-  const handleSubmitDeleteRequest = () => {
+  const handleSubmitDeleteRequest = async () => {
     if (!deleteReason.trim() || !id || !cafe) return;
 
-    const reportsJson = localStorage.getItem('reports');
-    const allReports = reportsJson ? JSON.parse(reportsJson) : [];
-    const newReport = {
-      id: `rep-${Date.now()}`,
-      type: 'cafe_delete',
-      status: 'active',
-      title: `Yêu cầu xóa quán: ${cafe.name}`,
-      titleJP: `カフェ削除依頼：${cafe.nameJP}`,
-      description: deleteReason,
-      descriptionJP: deleteReason,
-      cafeName: cafe.name,
-      cafeNameJP: cafe.nameJP,
-      reporterName: user?.name || user?.email || 'Chủ quán',
-      targetInfo: `${cafe.name} — ID #${id}`,
-      targetInfoJP: `${cafe.nameJP} — ID #${id}`,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('reports', JSON.stringify([...allReports, newReport]));
+    const cafeId = parseInt(id, 10);
+    const success = await requestCafeDeletion(cafeId, deleteReason.trim());
+    if (!success) {
+      return;
+    }
+
     setDeleteSubmitted(true);
   };
 
@@ -664,8 +652,8 @@ export default function OwnerCafeDetailPage() {
                     {/* Promotion Image */}
                     <div className="w-48 h-48 flex-shrink-0">
                       <img
-                        src={promotion.image}
-                        alt={language === 'jp' ? promotion.titleJP : promotion.title}
+                        src={promotion.imageUrl || 'https://images.unsplash.com/photo-1559056199-641a0ac8b3f4'}
+                        alt={language === 'jp' ? promotion.titleJp : promotion.title}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -674,16 +662,16 @@ export default function OwnerCafeDetailPage() {
                     <div className="flex-1 p-4 flex flex-col justify-between">
                       <div>
                         <h4 className="font-semibold text-lg mb-2">
-                          {language === 'jp' ? promotion.titleJP : promotion.title}
+                          {language === 'jp' ? promotion.titleJp : promotion.title}
                         </h4>
                         <p className="text-gray-600 text-sm mb-3">
-                          {language === 'jp' ? promotion.descriptionJP : promotion.description}
+                          {language === 'jp' ? promotion.descriptionJp : promotion.description}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Clock className="size-4" />
                           <span>
                             {language === 'jp' ? '有効期限: ' : 'Có hiệu lực đến: '}
-                            {new Date(promotion.validUntil).toLocaleDateString(language === 'jp' ? 'ja-JP' : 'vi-VN')}
+                            {formatPromotionDate(promotion.validUntil, language === 'jp' ? 'jp' : 'vn')}
                           </span>
                         </div>
                       </div>
@@ -693,17 +681,17 @@ export default function OwnerCafeDetailPage() {
                           variant="outline"
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm(language === 'jp' ? 'このプロモーションを削除しますか？' : 'Bạn có chắc muốn xóa khuyến mãi này?')) {
-                              // Remove promotion from localStorage
-                              const promotionsJson = localStorage.getItem('promotions');
-                              const allPromotions = promotionsJson ? JSON.parse(promotionsJson) : [];
-                              const updatedPromotions = allPromotions.filter((p: Promotion) => p.id !== promotion.id);
-
-                              localStorage.setItem('promotions', JSON.stringify(updatedPromotions));
-
-                              // Update local state
-                              setPromotions(updatedPromotions.filter((p: Promotion) => p.cafeId === id));
+                              // Call API to delete promotion
+                              const success = await deletePromotion(promotion.id);
+                              if (success) {
+                                // Reload promotions
+                                const cafePromos = await getCafePromotions(parseInt(id!));
+                                setPromotions(cafePromos || []);
+                              } else {
+                                alert(language === 'jp' ? '削除に失敗しました' : 'Xóa thất bại');
+                              }
                             }
                           }}
                         >
@@ -860,31 +848,10 @@ export default function OwnerCafeDetailPage() {
           open={showAddPromotionDialog}
           onClose={() => setShowAddPromotionDialog(false)}
           cafeId={id!}
-          onSubmit={(promotionData) => {
-            // Calculate validUntil date based on duration (in days)
-            const validUntilDate = new Date();
-            validUntilDate.setDate(validUntilDate.getDate() + parseInt(promotionData.duration));
-
-            // Add promotion to localStorage
-            const promotionsJson = localStorage.getItem('promotions');
-            const allPromotions = promotionsJson ? JSON.parse(promotionsJson) : [];
-            const newPromotion: Promotion = {
-              id: Date.now().toString(),
-              cafeId: id!,
-              title: promotionData.title,
-              titleJP: promotionData.titleJP,
-              description: promotionData.description,
-              descriptionJP: promotionData.descriptionJP,
-              image: promotionData.image,
-              validUntil: validUntilDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
-            };
-
-            localStorage.setItem('promotions', JSON.stringify([...allPromotions, newPromotion]));
-
-            // Update local state
-            setPromotions([...promotions, newPromotion]);
-
-            setShowAddPromotionDialog(false);
+          onSuccess={async () => {
+            // Reload promotions from API
+            const cafePromos = await getCafePromotions(parseInt(id!));
+            setPromotions(cafePromos || []);
           }}
         />
       )}

@@ -419,7 +419,7 @@ export default function CafeDetailPage() {
                       </div>
                       {cafePromotion && (
                         <div className="text-sm text-red-600 font-medium">
-                          {language === 'jp' ? cafePromotion.titleJP : cafePromotion.title}
+                          {language === 'jp' ? (cafePromotion.titleJp || cafePromotion.titleJP) : cafePromotion.title}
                         </div>
                       )}
                       <Badge variant={otherCafe.status === 'crowded' ? 'destructive' : 'outline'}>
