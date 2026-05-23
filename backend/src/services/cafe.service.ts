@@ -78,9 +78,8 @@ export const mapCafeFromDB = (data: any): Cafe => {
             ? [data.cover_image_url]
             : [],
 
-        // DB chưa có tọa độ
-        lat: 0,
-        lng: 0
+        lat: Number(data.lat ?? data.latitude ?? 0),
+        lng: Number(data.lng ?? data.longitude ?? 0)
     };
 };
 // 2. READ: Lấy chi tiết 1 quán kèm Menu và Amenities (Phục vụ P_ID 4 và Màn hình ID 10)
@@ -113,8 +112,11 @@ interface CreateCafeInput {
     phone_number: string;
     open_hours?: string;
     cover_image_url?: string;
+    place_id?: string | number;
+    lat?: number;
+    lng?: number;
 
-    amenities: {
+    amenities?: {
         has_wifi?: boolean;
         has_ac?: boolean;
         has_outlets?: boolean;
