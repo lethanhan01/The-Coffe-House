@@ -225,7 +225,7 @@ export default function MapView({
         marker.bindTooltip(
           tooltipHtml,
           {
-            direction,
+            direction: direction as L.Direction,
             offset: [0, 0],
             permanent: false
           }

@@ -124,6 +124,7 @@ export default function HomePage() {
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
   const [filters, setFilters] = useState<CafeFilters>(defaultFilters);
+  const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(5); // default 5km
 
   const { user } = useAuth();
   const { t, language } = useLanguage();
@@ -154,24 +155,74 @@ export default function HomePage() {
     if (filterValue.hasOutlet) params.set('has_outlets', 'true');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cafes/search?${params.toString()}`);
+      if (keyword.length > 0 || filterValue.hasWifi || filterValue.hasAC || filterValue.hasOutlet || filterValue.noSmoking || filterValue.hasSnacks || filterValue.isOpen) {
+        const response = await fetch(`${API_BASE_URL}/api/cafes/search?${params.toString()}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch cafes');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cafes');
+        }
+
+        const result = await response.json();
+        const nextCafes = applyCafeFilters((result.data || []).map(mapBackendCafe), keywordValue, filterValue);
+        setFilteredCafes(nextCafes);
+      } else {
+        // No keyword/filters: load nearby using selected radius
+        callAPINearbyCafes(nearbyRadiusKm);
       }
-
-      const result = await response.json();
-      const nextCafes = applyCafeFilters((result.data || []).map(mapBackendCafe), keywordValue, filterValue);
-
-      setFilteredCafes(nextCafes);
     } catch (error) {
       // setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
     }
   };
+  function callAPINearbyCafes(radiusKm: number) {
+    if ('geolocation' in navigator) {
 
+      navigator.geolocation.getCurrentPosition(
+
+        async (position) => {
+
+          const { latitude, longitude } =
+            position.coords;
+
+          try {
+
+            const response = await fetch(
+              `${API_BASE_URL}/api/search/nearby?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`
+            );
+
+            if (!response.ok) {
+              throw new Error('Failed to fetch cafes');
+            }
+
+            const result = await response.json();
+            const nextCafes = applyCafeFilters((result.data || []).map(mapBackendCafe), "", defaultFilters);
+            setFilteredCafes(nextCafes);
+
+          } catch (error) {
+
+            console.error(error);
+          }
+        },
+
+        (error) => {
+
+          console.log(error.message);
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+
+      console.log('Geolocation is not supported by this browser.');
+    }
+  }
   useEffect(() => {
-    searchCafes('', defaultFilters);
-  }, []);
+    // On mount, load nearby cafes with the current radius
+    callAPINearbyCafes(nearbyRadiusKm);
+  }, [nearbyRadiusKm]);
 
   const clearFilters = () => {
     setFilters(defaultFilters);
@@ -277,6 +328,17 @@ export default function HomePage() {
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="size-5 text-blue-600" />
             <span className="font-medium">{t('location')}</span>
+
+            <select
+              value={nearbyRadiusKm}
+              onChange={(e) => setNearbyRadiusKm(Number(e.target.value))}
+              className="ml-4 border rounded px-2 py-1 text-sm"
+              aria-label="Radius (km)"
+            >
+              <option value={1}>1 km</option>
+              <option value={3}>3 km</option>
+              <option value={5}>5 km</option>
+            </select>
           </div>
           <MapView
             cafes={filteredCafes}

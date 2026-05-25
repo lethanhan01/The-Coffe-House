@@ -181,8 +181,8 @@ export const nearbySearch = async (lat: number, lng: number, radiusKm: number = 
 
         // Filter by distance (basic calculation using Haversine formula)
         const nearby = data.filter((cafe: any) => {
-            if (!cafe.lat || !cafe.lng) return false;
-            const distance = calculateDistance(lat, lng, cafe.lat, cafe.lng);
+            if (!cafe.lat || !cafe.lon) return false;
+            const distance = calculateDistance(lat, lng, cafe.lat, cafe.lon);
             return distance <= radiusKm;
         });
 
