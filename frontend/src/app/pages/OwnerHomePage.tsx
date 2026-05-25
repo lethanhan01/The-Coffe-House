@@ -67,6 +67,9 @@ export default function OwnerHomePage() {
       hasSnacks: boolean;
       hasCoffee: boolean;
     };
+    lat: string;
+    lon: string;
+    place_id: number;
   }) => {
     // Create new cafe
     const newCafe = {
@@ -97,6 +100,10 @@ export default function OwnerHomePage() {
         is_quiet: newCafe.status === 'quiet',
         has_high_tables: newCafe.amenities.hasCoffee,
       },
+      lat: newCafe.lat,
+      lon: newCafe.lon,
+      place_id: newCafe.place_id,
+
     };
 
     // Call API to create cafe

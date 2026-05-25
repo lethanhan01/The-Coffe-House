@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { Cafe } from '../utils/mockData';
+import type { Cafe } from "../services/cafeService";
 import { useLanguage } from '../contexts/LanguageContext';
 
-interface MapViewProps {
+export interface MapViewProps {
   cafes: Cafe[];
   onCafeClick?: (cafeId: string) => void;
   height?: string;
@@ -90,7 +90,7 @@ export default function MapView({
     if (!mapRef.current) return;
 
     // Remove existing markers
-    mapRef.current.eachLayer((layer) => {
+    mapRef.current.eachLayer((layer: any) => {
       if (layer instanceof L.Marker) {
         mapRef.current?.removeLayer(layer);
       }
@@ -135,24 +135,109 @@ export default function MapView({
 
     // Add cafe markers
     cafes.forEach((cafe) => {
-      if (mapRef.current) {
-        // Get today's opening hours
-        const todayHours = cafe.openingHours.find(h => h.day === today);
-        const hoursText = todayHours ? todayHours.hours : 'Closed';
 
-        const marker = L.marker([cafe.lat, cafe.lng])
-          .bindPopup(
-            `<div class="w-48"><img src="${cafe.images[0]}" alt="${cafe.name}" class="w-full h-24 object-cover rounded mb-2" /><h3 class="font-bold text-sm mb-1">${language === 'jp' ? cafe.nameJP : cafe.name}</h3><p class="text-xs text-gray-600 mb-2">${cafe.address}</p><div class="flex gap-2"><span class="text-xs font-semibold text-yellow-600">⭐ ${cafe.rating}</span><span class="text-xs text-gray-500">(${cafe.reviewCount} reviews)</span></div></div>`
-          )
-          .bindTooltip(
-            `<div class="text-sm"><strong>${language === 'jp' ? cafe.nameJP : cafe.name}</strong><br/>${hoursText}</div>`,
-            { direction: 'top', offset: [0, -10], permanent: false }
-          )
-          .on('click', () => {
-            onCafeClick?.(cafe.id);
-          })
-          .addTo(mapRef.current);
-      }
+      if (!mapRef.current) return;
+
+      const todayHours =
+        cafe.openingHours.find(
+          h => h.day === today
+        );
+
+      const hoursText =
+        todayHours
+          ? todayHours.hours
+          : 'Closed';
+
+      const tooltipHtml = `
+    <div class="w-64">
+
+      <img
+        src="${cafe.images[0]}"
+        alt="${cafe.name}"
+        class="w-full h-24 object-cover rounded mb-2"
+      />
+
+      <h3 class="font-bold text-sm mb-1">
+        ${language === 'jp'
+          ? cafe.nameJP
+          : cafe.name}
+      </h3>
+
+      <p class="text-xs text-gray-600 mb-2 break-words whitespace-normal">
+        ${cafe.address}
+      </p>
+
+      <div class="flex gap-2">
+
+        <span class="text-xs font-semibold text-yellow-600">
+          ⭐ ${cafe.rating}
+        </span>
+
+        <span class="text-xs text-gray-500">
+          (${cafe.reviewCount} reviews)
+        </span>
+
+      </div>
+
+    </div>
+  `;
+
+      const marker = L.marker([
+        cafe.lat,
+        cafe.lng
+      ]).addTo(mapRef.current);
+
+      marker.bindPopup(tooltipHtml);
+
+      marker.on('mouseover', () => {
+
+        if (!mapRef.current) return;
+
+        // TÍNH LẠI VỊ TRÍ KHI HOVER
+        const markerPoint =
+          mapRef.current.latLngToContainerPoint(
+            marker.getLatLng()
+          );
+
+        let direction = 'top';
+        if (markerPoint.y > 249) {
+          direction = 'top';
+        }
+        else if (markerPoint.y < 219) {
+          direction = 'bottom';
+        }
+        else {
+          direction = 'right';
+          if (markerPoint.x > 1000) {
+            direction = 'left';
+          }
+        }
+
+        console.log(
+          `hover x=${markerPoint.x},
+       y=${markerPoint.y},
+       direction=${direction}`
+        );
+
+        // REBIND TOOLTIP
+        marker.unbindTooltip();
+
+        marker.bindTooltip(
+          tooltipHtml,
+          {
+            direction,
+            offset: [0, 0],
+            permanent: false
+          }
+        );
+
+        marker.openTooltip();
+      });
+
+      marker.on('click', () => {
+        onCafeClick?.(cafe.id);
+      });
+
     });
 
     // Keep map centered on user location instead of fitting bounds

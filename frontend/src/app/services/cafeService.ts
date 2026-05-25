@@ -39,6 +39,7 @@ export interface Cafe {
   images: string[];
   lat: number;
   lng: number;
+  place_id?: string | number;
 }
 export interface MenuItem {
   id: string;
@@ -141,7 +142,9 @@ export interface CreateCafeInput {
   phone_number: string;
   open_hours?: string;
   cover_image_url?: string;
-
+  place_id?: string | number;
+  lat?: string | number;
+  lon?: string | number;
   amenities: {
     has_ac?: boolean;
     has_wifi?: boolean;

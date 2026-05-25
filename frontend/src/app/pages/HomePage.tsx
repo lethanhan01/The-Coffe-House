@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getCafes, type Cafe } from '../utils/mockData';
+import { getAllCafes as getCafes, type Cafe } from '../services/cafeService';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -16,12 +16,12 @@ import ProfileDialog from '../components/ProfileDialog';
 import NotificationsDialog from '../components/NotificationsDialog';
 import MapView from '../components/MapView';
 import { getActivePromotions, type Promotion, formatPromotionDate } from '../services/promotionService';
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
 
 type BackendCafe = {
   id: number | string;
+  owner_id: number | string;
   name_jp?: string | null;
   name_vn?: string | null;
   address?: string | null;
@@ -34,8 +34,8 @@ type BackendCafe = {
   cover_image_url?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  lat?: number | null;
-  lng?: number | null;
+  lat?: string | null;
+  lon?: string | null;
   has_wifi?: boolean | number | null;
   has_ac?: boolean | number | null;
   has_outlets?: boolean | number | null;
@@ -66,6 +66,7 @@ const toBoolean = (value: boolean | number | null | undefined) => value === true
 
 const mapBackendCafe = (cafe: BackendCafe): Cafe => ({
   id: String(cafe.id),
+  owner_id: cafe.owner_id ?? 0,
   name: cafe.name_vn || cafe.name_jp || '',
   nameJP: cafe.name_jp || cafe.name_vn || '',
   address: cafe.address || '',
@@ -85,8 +86,8 @@ const mapBackendCafe = (cafe: BackendCafe): Cafe => ({
   rating: cafe.average_rating ?? 0,
   reviewCount: cafe.review_count ?? 0,
   images: [cafe.cover_image_url || DEFAULT_CAFE_IMAGE],
-  lat: cafe.lat ?? cafe.latitude ?? 0,
-  lng: cafe.lng ?? cafe.longitude ?? 0,
+  lat: Number(cafe.lat) ?? cafe.latitude ?? 0,
+  lng: Number(cafe.lon) ?? cafe.longitude ?? 0,
 });
 
 const applyCafeFilters = (items: Cafe[], keywordValue: string, filterValue: CafeFilters) => {
@@ -164,7 +165,7 @@ export default function HomePage() {
 
       setFilteredCafes(nextCafes);
     } catch (error) {
-      setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
+      // setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
     }
   };
 
@@ -240,16 +241,16 @@ export default function HomePage() {
                   }}
                 >
                   <img
-                    src={promotions[currentPromoIndex].image}
+                    src={promotions[currentPromoIndex].imageUrl}
                     alt="Promotion"
                     className="w-full h-48 object-cover rounded-lg"
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                     <h3 className="text-white font-bold">
-                      {language === 'jp' ? promotions[currentPromoIndex].titleJP : promotions[currentPromoIndex].title}
+                      {language === 'jp' ? promotions[currentPromoIndex].titleJp : promotions[currentPromoIndex].title}
                     </h3>
                     <p className="text-white text-sm">
-                      {language === 'jp' ? promotions[currentPromoIndex].descriptionJP : promotions[currentPromoIndex].description}
+                      {language === 'jp' ? promotions[currentPromoIndex].descriptionJp : promotions[currentPromoIndex].description}
                     </p>
                   </div>
                 </div>
@@ -452,7 +453,7 @@ export default function HomePage() {
           {selectedPromotion && (
             <div className="space-y-4">
               <img
-                src={selectedPromotion.image}
+                src={selectedPromotion.imageUrl}
                 alt="Promotion"
                 className="w-full h-64 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => {

@@ -79,7 +79,7 @@ export const mapCafeFromDB = (data: any): Cafe => {
             : [],
 
         lat: Number(data.lat ?? data.latitude ?? 0),
-        lng: Number(data.lng ?? data.longitude ?? 0)
+        lng: Number(data.lng ?? data.lon ?? data.longitude ?? 0)
     };
 };
 // 2. READ: Lấy chi tiết 1 quán kèm Menu và Amenities (Phục vụ P_ID 4 và Màn hình ID 10)

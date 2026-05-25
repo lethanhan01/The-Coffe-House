@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { useLanguage } from '../contexts/LanguageContext';
+
+
+
+type PlaceResult = {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  name?: string;
+};
 
 interface AddCafeDialogProps {
   open: boolean;
@@ -23,10 +33,17 @@ interface AddCafeDialogProps {
       hasSnacks: boolean;
       hasCoffee: boolean;
     };
+    lat: string;
+    lon: string;
+    place_id: number;
   }) => void;
 }
 
+
 export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
+  const [suggestions, setSuggestions] = useState<PlaceResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
   const [name, setName] = useState('');
   const [nameJP, setNameJP] = useState('');
   const [address, setAddress] = useState('');
@@ -45,6 +62,40 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   const [error, setError] = useState('');
   const { language, t } = useLanguage();
 
+  useEffect(() => {
+
+    const timeout = setTimeout(() => {
+
+      searchPlace(address);
+
+    }, 500);
+
+    return () => clearTimeout(timeout);
+
+  }, [address]);
+  async function searchPlace(keyword: string) {
+
+    if (!keyword.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+
+      const url =
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(keyword)}&format=jsonv2&limit=5`;
+
+      const response = await fetch(url);
+
+      const data = await response.json();
+
+      setSuggestions(data);
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  }
   // const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   //   const file = e.target.files?.[0];
   //   if (file) {
@@ -123,6 +174,9 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
       phone,
       coverImage: imageUrl,
       amenities,
+      lat: selectedPlace ? selectedPlace.lat : '',
+      lon: selectedPlace ? selectedPlace.lon : '',
+      place_id: selectedPlace ? selectedPlace.place_id : 0,
     });
     // Reset form
     setName('');
@@ -186,15 +240,60 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
             <Label htmlFor="address">
               {language === 'jp' ? '住所' : 'Địa chỉ'} *
             </Label>
-            <Input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder={language === 'jp' ? '1 Tràng Tiền, Hoàn Kiếm, Hà Nội' : '1 Tràng Tiền, Hoàn Kiếm, Hà Nội'}
-              required
-              className="mt-2"
-            />
+
+            <div className="relative mt-2">
+
+              <Input
+                id="address"
+                type="text"
+                value={address}
+                onChange={(e) => {
+
+                  setAddress(e.target.value);
+
+                  setShowSuggestions(true);
+                }}
+                placeholder="1 Tràng Tiền, Hoàn Kiếm, Hà Nội"
+                required
+              />
+
+              {showSuggestions &&
+                suggestions.length > 0 && (
+
+                  <div className="absolute z-50 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+
+                    {suggestions.map((place) => (
+
+                      <div
+                        key={place.place_id}
+                        className="p-3 hover:bg-gray-100 cursor-pointer border-b"
+                        onClick={() => {
+
+                          setAddress(place.display_name);
+
+                          setSelectedPlace(place);
+
+                          setShowSuggestions(false);
+                        }}
+                      >
+
+                        <div className="font-medium text-sm">
+                          {place.name || 'Unnamed'}
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          {place.display_name}
+                        </div>
+
+                      </div>
+
+                    ))}
+
+                  </div>
+
+                )}
+
+            </div>
           </div>
 
           <div>
