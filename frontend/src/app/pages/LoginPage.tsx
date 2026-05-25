@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { login } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,12 +31,16 @@ export default function LoginPage() {
     const loggedInUser = await login(email, password);
     if (loggedInUser) {
       if (loggedInUser.role === 1) {
+        setLanguage('jp');
         navigate('/home');
       } else if (loggedInUser.role === 2) {
+        setLanguage('vn');
         navigate('/owner');
       } else if (loggedInUser.role === 3) {
+        setLanguage('vn');
         navigate('/admin');
       } else if (loggedInUser.role === 4) {
+        setLanguage('vn');
         navigate('/staff');
       }
     } else {
