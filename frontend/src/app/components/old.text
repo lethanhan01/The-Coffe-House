@@ -6,10 +6,14 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { useLanguage } from '../contexts/LanguageContext';
 
+
+
 type PlaceResult = {
-  place_id: string;
+  place_id: number;
+  lat: string;
+  lon: string;
   display_name: string;
-  name: string;
+  name?: string;
 };
 
 interface AddCafeDialogProps {
@@ -31,22 +35,20 @@ interface AddCafeDialogProps {
     };
     lat: string;
     lon: string;
-    place_id: string;
+    place_id: number;
   }) => void;
 }
 
-export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
-  // Lấy API Key từ biến môi trường Vite
-  const API_KEY = import.meta.env.VITE_OPENMAP_API_KEY;
 
+export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   const [suggestions, setSuggestions] = useState<PlaceResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedCoordinates, setSelectedCoordinates] = useState<{ lat: string; lng: string; id: string } | null>(null);
-
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
   const [name, setName] = useState('');
   const [nameJP, setNameJP] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  // const [coverImage, setCoverImage] = useState<string>('');
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState('');
   const [amenities, setAmenities] = useState({
@@ -61,77 +63,76 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   const { language, t } = useLanguage();
 
   useEffect(() => {
+
     const timeout = setTimeout(() => {
+
       searchPlace(address);
+
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [address]);
 
-  // 1. API Autocomplete kèm API Key
+  }, [address]);
   async function searchPlace(keyword: string) {
+
     if (!keyword.trim()) {
       setSuggestions([]);
       return;
     }
 
     try {
-      const url = `https://mapapis.openmap.vn/v1/autocomplete?text=${encodeURIComponent(keyword)}&apikey=${API_KEY}`;
+
+      const url =
+        `https://nominatim-api.openmap.vn/search?q=${encodeURIComponent(keyword)}&format=jsonv2&limit=5&countrycodes=vn`;
+
       const response = await fetch(url);
+
       const data = await response.json();
 
-      if (data && data.features) {
-        const mappedSuggestions = data.features.map((feature: any) => ({
-          place_id: feature.properties.id,
-          display_name: feature.properties.label,
-          name: feature.properties.name,
-        }));
-        setSuggestions(mappedSuggestions);
-      } else {
-        setSuggestions([]);
-      }
+      setSuggestions(data);
+
     } catch (error) {
-      console.error('Error fetching autocomplete:', error);
+
+      console.error(error);
     }
   }
+  // const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setCoverImage(reader.result as string);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
 
-  // 2. API Place Detail kèm API Key
-  async function fetchPlaceDetail(placeId: string) {
-    try {
-      const url = `https://mapapis.openmap.vn/v1/place?ids=${placeId}&format=google&apikey=${API_KEY}`;
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data && data.status === 'OK' && data.result) {
-        const location = data.result.geometry.location;
-        setSelectedCoordinates({
-          lat: location.lat.toString(),
-          lng: location.lng.toString(),
-          id: placeId
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching place details:', error);
-    }
-  }
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     setCoverImage(file);
+
     const previewUrl = URL.createObjectURL(file);
+
     setPreviewImage(previewUrl);
   };
-
   const uploadImage = async (file: File) => {
+
     const formData = new FormData();
+
     formData.append('image', file);
 
-    const response = await fetch('http://localhost:3000/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await fetch(
+      'http://localhost:3000/api/upload',
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Upload failed');
@@ -139,7 +140,6 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
 
     return response.json();
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -149,46 +149,51 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
       return;
     }
 
-    let imageUrl = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800';
+    // onSubmit({
+    //   name,
+    //   nameJP,
+    //   address,
+    //   phone,
+    //   coverImage: coverImage || 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
+    //   amenities,
+    // });
+    let imageUrl =
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800';
 
-    try {
-      if (coverImage) {
-        const uploadResult = await uploadImage(coverImage);
-        imageUrl = uploadResult.url;
-      }
+    if (coverImage) {
 
-      onSubmit({
-        name,
-        nameJP,
-        address,
-        phone,
-        coverImage: imageUrl,
-        amenities,
-        lat: selectedCoordinates ? selectedCoordinates.lat : '',
-        lon: selectedCoordinates ? selectedCoordinates.lng : '',
-        place_id: selectedCoordinates ? selectedCoordinates.id : '',
-      });
+      const uploadResult = await uploadImage(coverImage);
 
-      // Reset form
-      setName('');
-      setNameJP('');
-      setAddress('');
-      setPhone('');
-      setCoverImage(null);
-      setPreviewImage('');
-      setSelectedCoordinates(null);
-      setAmenities({
-        hasWifi: false,
-        hasAC: false,
-        hasOutlet: false,
-        noSmoking: false,
-        hasSnacks: false,
-        hasCoffee: false,
-      });
-    } catch (err) {
-      console.error(err);
-      setError(language === 'jp' ? 'エラーが発生しました' : 'Có lỗi xảy ra khi xử lý dữ liệu');
+      imageUrl = uploadResult.url;
     }
+
+    onSubmit({
+      name,
+      nameJP,
+      address,
+      phone,
+      coverImage: imageUrl,
+      amenities,
+      lat: selectedPlace ? selectedPlace.lat : '',
+      lon: selectedPlace ? selectedPlace.lon : '',
+      place_id: selectedPlace ? selectedPlace.place_id : 0,
+    });
+    // Reset form
+    setName('');
+    setNameJP('');
+    setAddress('');
+    setPhone('');
+    // setCoverImage('');
+    setCoverImage(null);
+    setPreviewImage('');
+    setAmenities({
+      hasWifi: false,
+      hasAC: false,
+      hasOutlet: false,
+      noSmoking: false,
+      hasSnacks: false,
+      hasCoffee: false,
+    });
   };
 
   return (
@@ -237,41 +242,57 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
             </Label>
 
             <div className="relative mt-2">
+
               <Input
                 id="address"
                 type="text"
                 value={address}
                 onChange={(e) => {
+
                   setAddress(e.target.value);
+
                   setShowSuggestions(true);
                 }}
                 placeholder="1 Tràng Tiền, Hoàn Kiếm, Hà Nội"
                 required
               />
 
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
-                  {suggestions.map((place) => (
-                    <div
-                      key={place.place_id}
-                      className="p-3 hover:bg-gray-100 cursor-pointer border-b"
-                      onClick={() => {
-                        setAddress(place.display_name);
-                        setShowSuggestions(false);
-                        // Fetch details with the API key
-                        fetchPlaceDetail(place.place_id);
-                      }}
-                    >
-                      <div className="font-medium text-sm">
-                        {place.name || 'Unnamed'}
+              {showSuggestions &&
+                suggestions.length > 0 && (
+
+                  <div className="absolute z-50 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+
+                    {suggestions.map((place) => (
+
+                      <div
+                        key={place.place_id}
+                        className="p-3 hover:bg-gray-100 cursor-pointer border-b"
+                        onClick={() => {
+
+                          setAddress(place.display_name);
+
+                          setSelectedPlace(place);
+
+                          setShowSuggestions(false);
+                        }}
+                      >
+
+                        <div className="font-medium text-sm">
+                          {place.name || 'Unnamed'}
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          {place.display_name}
+                        </div>
+
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {place.display_name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+
+                    ))}
+
+                  </div>
+
+                )}
+
             </div>
           </div>
 
@@ -291,7 +312,10 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
           </div>
 
           <div className="space-y-3">
-            <Label>{language === 'jp' ? '設備・サービス' : 'Tiện ích'}</Label>
+            <Label>
+              {language === 'jp' ? '設備・サービス' : 'Tiện ích'}
+            </Label>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -374,15 +398,18 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
           </div>
 
           <div className="space-y-3">
-            <Label>{language === 'jp' ? 'カバー画像' : 'Ảnh bìa'}</Label>
+            <Label>
+              {language === 'jp' ? 'カバー画像' : 'Ảnh bìa'}
+            </Label>
             <Input
               id="coverImage"
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
             />
-            {previewImage && (
+            {previewImage && ( //coverImage &&
               <img
+                // src={coverImage}
                 src={previewImage}
                 alt="Cover"
                 className="w-full h-40 object-cover mt-2"
@@ -390,7 +417,9 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
             )}
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>

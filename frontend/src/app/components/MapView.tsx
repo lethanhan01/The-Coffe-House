@@ -171,9 +171,14 @@ export default function MapView({
             <h3 class="font-bold text-sm text-gray-800 mb-1">
               ${language === 'jp' ? cafe.nameJP : cafe.name}
             </h3>
-            <p class="text-xs text-gray-600 mb-2 break-words line-clamp-2">
+            <a 
+              href="https://www.google.com/maps/search/${encodeURIComponent(cafe.address)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-xs text-blue-600 hover:text-blue-800 hover:underline mb-2 break-words line-clamp-2 block"
+            >
               📍 ${cafe.address}
-            </p>
+            </a>
             <div class="flex items-center gap-1 text-xs text-gray-500 mb-3">
               <span>⭐ ${cafe.rating}</span>
               <span>•</span>
