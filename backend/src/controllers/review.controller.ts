@@ -17,7 +17,7 @@ export const getReviewsHandler = async (req: Request, res: Response) => {
 export const createReviewHandler = async (req: Request, res: Response) => {
     try {
         const { cafe_id, rating, comment, image_urls } = req.body;
-        
+
         // Auth check is handled by middleware, so req.user exists
         const user_id = req.user?.id;
 
@@ -47,5 +47,38 @@ export const createReviewHandler = async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         res.status(500).json({ error: error.message || 'Internal server error' });
+    }
+};
+
+export const createReviewReport = async (req: Request, res: Response) => {
+    try {
+        const { review_id, reason, detail } = req.body;
+        const reporter_id = req.user?.id;
+
+        if (!reporter_id) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (!review_id || !reason || !detail) {
+            return res.status(400).json({ error: 'Missing required fields: review_id, reason, or detail' });
+        }
+
+        const result = await reviewService.createReviewReport({
+            review_id,
+            reporter_id,
+            reason,
+            detail
+        });
+
+        res.status(201).json({
+            message: 'Review report submitted successfully',
+            data: result,
+            scuccess: true
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message || 'Internal server error',
+            success: false
+        });
     }
 };

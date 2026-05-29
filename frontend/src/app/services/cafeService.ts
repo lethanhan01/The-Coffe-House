@@ -305,3 +305,86 @@ export const getCafesByOwner = async (ownerId: number): Promise<Cafe[] | null> =
     return null;
   }
 };
+
+//8. Review cafe (for cafe owners)
+export interface Review {
+  id: string;
+  userId: string;
+  cafeId: string;
+  rating: number;
+  comment: string;
+  images?: string[];
+  createdAt: string;
+  userName: string;
+  userAvatar?: string;
+}
+
+export const getReviewsByCafeId = async (cafeId: number): Promise<Review[] | null> => {
+  try {
+    const response = await fetch(`${API_URL}/reviews?cafe_id=${cafeId}`, {
+      headers: getHeaders(false)
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch cafe reviews');
+      return null;
+    }
+
+    const result = await response.json();
+    const res = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+    return res.map((review: any) => ({
+      id: String(review.id),
+      userId: String(review.user_id),
+      cafeId: String(review.cafe_id),
+      rating: review.rating,
+      comment: review.comment,
+      images: review.images,
+      createdAt: review.createdAt,
+      userName: review.userName,
+      userAvatar: review?.avatarUrl || review?.userAvatar || null
+    }));
+  } catch (error) {
+    console.error('Error fetching cafe reviews:', error);
+    return null;
+  }
+};
+
+// 9. Get Booking
+export interface Booking {
+  id: string;
+  userId: string;
+  cafeId: string;
+  date: string;
+  time: string;
+  numberOfPeople: number;
+  status: 'pending' | 'confirmed' | 'rejected';
+  createdAt: string;
+}
+export const getBookingsByCafeId = async (cafeId: number): Promise<Booking[] | null> => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/cafe/${cafeId}`, {
+      headers: getHeaders(false)
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch cafe bookings');
+      return null;
+    }
+
+    const result = await response.json();
+    const res = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+    return res.map((booking: any) => ({
+      id: String(booking.id),
+      userId: String(booking.user_id),
+      cafeId: String(booking.cafe_id),
+      date: booking.booking_date,
+      time: booking.booking_time,
+      numberOfPeople: booking.number_of_people,
+      status: booking.status,
+      createdAt: booking.createdAt
+    }));
+  } catch (error) {
+    console.error('Error fetching cafe bookings:', error);
+    return null;
+  }
+};

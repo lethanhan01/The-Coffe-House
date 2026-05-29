@@ -330,11 +330,11 @@ export function autoTranslate(text: string, fromLang: 'vn' | 'jp', toLang: 'vn' 
 
   const key = `${fromLang}->${toLang}`;
   const translation = mockTranslations[key]?.[text];
-  
+
   if (translation) {
     return translation;
   }
-  
+
   // If no exact match, return a generic translated version
   if (fromLang === 'vn' && toLang === 'jp') {
     return `【${text}】`; // Wrapped in Japanese brackets
@@ -355,7 +355,7 @@ export function initializeMockData() {
     // Initialize staff using getStaff() which handles the data
     getStaff();
   }
-  
+
   // Initialize bookings
   const existingBookings = localStorage.getItem('bookings');
   if (!existingBookings) {
@@ -491,7 +491,7 @@ export function initializeMockData() {
       localStorage.setItem('bookings', JSON.stringify(initialBookings));
     }
   }
-  
+
   if (!localStorage.getItem('cafeOwners')) {
     // Map cafes to owner (user id '2' is the owner@test.com)
     const cafeOwners: Record<string, string> = {
@@ -636,7 +636,7 @@ export function getNotifications(): Notification[] {
 
 export function markNotificationAsRead(notificationId: string) {
   const notifications = getNotifications();
-  const updated = notifications.map(n => 
+  const updated = notifications.map(n =>
     n.id === notificationId ? { ...n, read: true } : n
   );
   localStorage.setItem('notifications', JSON.stringify(updated));

@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertTriangle } from 'lucide-react';
 
+const BACKEND_URL = 'http://localhost:3000';
 interface ReportReviewDialogProps {
   open: boolean;
   onClose: () => void;
@@ -51,7 +52,7 @@ export function ReportReviewDialog({
 
   const reasons = language === 'jp' ? REPORT_REASONS.jp : REPORT_REASONS.vn;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -62,7 +63,6 @@ export function ReportReviewDialog({
 
     // Create report
     const report = {
-      id: `report_${Date.now()}`,
       reviewId,
       cafeId,
       reporterId: user?.id || '',
@@ -75,13 +75,25 @@ export function ReportReviewDialog({
       createdAt: new Date().toISOString(),
     };
 
-    // Save to localStorage
-    const reportsJson = localStorage.getItem('reviewReports');
-    const reports = reportsJson ? JSON.parse(reportsJson) : [];
-    reports.push(report);
-    localStorage.setItem('reviewReports', JSON.stringify(reports));
-
-    setSuccess(true);
+    const reportEntity = {
+      review_id: report.reviewId,
+      reporter_id: report.reporterId,
+      reason: report.reason,
+      detail: report.details,
+      status: report.status,
+      created_at: report.createdAt,
+    }
+    // Send report to backend
+    const response = await fetch(`${BACKEND_URL}/api/reviews/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(reportEntity),
+    });
+    const { success } = await response.json();
+    setSuccess(success);
     setTimeout(() => {
       setSuccess(false);
       onClose();
@@ -111,8 +123,8 @@ export function ReportReviewDialog({
               {language === 'jp' ? '通報を送信しました' : 'Đã gửi khiếu nại thành công'}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              {language === 'jp' 
-                ? '管理者が確認します' 
+              {language === 'jp'
+                ? '管理者が確認します'
                 : 'Admin sẽ xem xét trong thời gian sớm nhất'}
             </p>
           </div>
@@ -138,11 +150,10 @@ export function ReportReviewDialog({
                 {reasons.map((reason, index) => (
                   <label
                     key={index}
-                    className={`flex items-center p-2 border rounded cursor-pointer transition-colors ${
-                      selectedReason === reason
-                        ? 'border-amber-700 bg-amber-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`flex items-center p-2 border rounded cursor-pointer transition-colors ${selectedReason === reason
+                      ? 'border-amber-700 bg-amber-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                   >
                     <input
                       type="radio"

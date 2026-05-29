@@ -47,7 +47,6 @@ export const getCafeBookings = async (cafeId: number) => {
         .select('*, users(full_name, email, phone_number)')
         .eq('cafe_id', cafeId)
         .order('booking_date', { ascending: false });
-
     if (error) throw new Error(error.message);
 
     return data || [];

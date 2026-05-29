@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getCafes, getReviews, getBookings, getPromotions, getStaff, /*type Cafe,*/ type Review, type Booking, type Promotion, type Staff } from '../utils/mockData';
+import { getCafes, getReviews, /*getBookings,*/ getPromotions, getStaff, /*type Cafe, type Review, type Booking, */type Promotion, type Staff } from '../utils/mockData';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, MapPin, Phone, Clock, Star, MessageSquare, Calendar, Tag, Users, Info, Wifi, Wind, Plug, Cigarette, Cookie, Edit, Coffee, AlertCircle, Flag, Plus, Trash2, Eye, Mail, Briefcase, Armchair } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -16,7 +16,7 @@ import { StaffDetailDialog } from '../components/StaffDetailDialog';
 import { AddStaffDialog } from '../components/AddStaffDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
-import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe, requestCafeDeletion } from '../services/cafeService';
+import { type Cafe, getCafeById, type UpdateCafeInput, updateCafe, requestCafeDeletion, getReviewsByCafeId, type Review, getBookingsByCafeId as getBookings, type Booking } from '../services/cafeService';
 import { getCafePromotions, deletePromotion, type Promotion as PromotionType, formatPromotionDate } from '../services/promotionService';
 
 export default function OwnerCafeDetailPage() {
@@ -71,12 +71,13 @@ export default function OwnerCafeDetailPage() {
       setCafe(foundCafe);
 
       // Load reviews for this cafe
-      const allReviews = getReviews();
-      setReviews(allReviews.filter(r => r.cafeId === id));
+      const allReviews = await getReviewsByCafeId(parseInt(id));
+      setReviews(allReviews || []);
 
       // Load bookings for this cafe - force reinitialize if needed
-      const allBookings = getBookings();
-      const cafeBookings = allBookings.filter(b => b.cafeId === id);
+      const allBookings = await getBookings(parseInt(id));
+      // const cafeBookings = allBookings.filter(b => b.cafeId === id);
+      const cafeBookings = allBookings || [];
       console.log('All bookings:', allBookings);
       console.log('Cafe bookings for cafe', id, ':', cafeBookings);
       setBookings(cafeBookings);

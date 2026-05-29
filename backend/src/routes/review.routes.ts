@@ -10,4 +10,7 @@ router.get('/', reviewController.getReviewsHandler);
 // Phải đăng nhập mới được viết đánh giá
 router.post('/', authenticateToken, reviewController.createReviewHandler);
 
+// Phải đăng nhập mới được report đánh giá
+router.post('/report', authenticateToken, reviewController.createReviewReport);
+
 export default router;

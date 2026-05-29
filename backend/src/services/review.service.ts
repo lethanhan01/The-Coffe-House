@@ -107,3 +107,22 @@ export const createReview = async (reviewData: {
         new_cafe_review_count: review_count
     };
 };
+
+export const createReviewReport = async (reportData: {
+    review_id: number;
+    reporter_id: number;
+    reason: string;
+    detail: string;
+}) => {
+    const { review_id, reporter_id, reason, detail } = reportData;
+    const status = 'pending'; // Mặc định trạng thái là pending khi tạo mới
+    const { data: report, error: reportError } = await supabase
+        .from('review_reports')
+        .insert([{ review_id, reporter_id, reason, detail, status }])
+        .select('id')
+        .single();
+
+    if (reportError) throw new Error(`Failed to insert review report: ${reportError.message}`);
+
+    return report;
+};
