@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import type { Cafe } from "../services/cafeService";
 import { useLanguage } from '../contexts/LanguageContext';
+import maplibregl from "@openmapvn/openmapvn-gl";
+import "@openmapvn/openmapvn-gl/dist/maplibre-gl.css";
 
 export interface MapViewProps {
   cafes: Cafe[];
@@ -14,29 +14,35 @@ export interface MapViewProps {
 export default function MapView({
   cafes,
   onCafeClick,
-  height = 'h-96',
+  height = 'h-[600px]',
   onLocationChange
 }: MapViewProps) {
   const { language } = useLanguage();
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   // Default center on Hanoi
-  const defaultCenter: [number, number] = [21.028333, 105.85361];
+  const defaultCenter: [number, number] = [105.85361, 21.028333];
 
   // Initialize map
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create map
-    const map = L.map(containerRef.current).setView(defaultCenter, 13);
+    const apiKey = import.meta.env.VITE_OPENMAP_API_KEY;
+    if (!apiKey) {
+      console.error('OpenMapVN API key not found in environment variables');
+      return;
+    }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
+    // Create MapLibre GL map
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: `https://maptiles.openmap.vn/styles/day-v1/style.json?apikey=${apiKey}`,
+      center: defaultCenter,
+      zoom: 15,
+    });
 
     mapRef.current = map;
 
@@ -51,14 +57,17 @@ export default function MapView({
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          const userLoc: [number, number] = [latitude, longitude];
+          const userLoc: [number, number] = [longitude, latitude];
           setUserLocation(userLoc);
           setLocationError(null);
           onLocationChange?.(latitude, longitude);
 
           // Center map on user location
           if (mapRef.current) {
-            mapRef.current.setView(userLoc, 15);
+            mapRef.current.flyTo({
+              center: userLoc,
+              zoom: 15
+            });
           }
         },
         (error) => {
@@ -67,7 +76,10 @@ export default function MapView({
           // Use default location as fallback for demo
           setUserLocation(defaultCenter);
           if (mapRef.current) {
-            mapRef.current.setView(defaultCenter, 15);
+            mapRef.current.flyTo({
+              center: defaultCenter,
+              zoom: 15
+            });
           }
         },
         {
@@ -80,7 +92,10 @@ export default function MapView({
       // Geolocation not available, use default
       setUserLocation(defaultCenter);
       if (mapRef.current) {
-        mapRef.current.setView(defaultCenter, 15);
+        mapRef.current.flyTo({
+          center: defaultCenter,
+          zoom: 15
+        });
       }
     }
   }, [onLocationChange]);
@@ -90,42 +105,42 @@ export default function MapView({
     if (!mapRef.current) return;
 
     // Remove existing markers
-    mapRef.current.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker) {
-        mapRef.current?.removeLayer(layer);
-      }
-    });
+    const markers = document.querySelectorAll('.maplibregl-marker');
+    markers.forEach(marker => marker.remove());
 
-    // Add user location marker with circular icon
+    // Add user location marker
     if (userLocation) {
-      const userIcon = L.divIcon({
-        html: `<div style="
-          width: 24px;
-          height: 24px;
-          background-color: #3b82f6;
-          border: 3px solid white;
-          border-radius: 50%;
-          box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            width: 4px;
-            height: 4px;
-            background-color: white;
-            border-radius: 50%;
-          "></div>
-        </div>`,
-        className: '',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-      });
+      const el = document.createElement('div');
+      el.className = 'user-marker';
+      el.style.cssText = `
+        width: 24px;
+        height: 24px;
+        background-color: #3b82f6;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      `;
 
-      L.marker(userLocation, { icon: userIcon })
-        .bindPopup(
-          `<div class="w-32"><h3 class="font-bold text-sm">Vị trí của bạn</h3><p class="text-xs text-gray-600">${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}</p></div>`
-        )
+      const innerDot = document.createElement('div');
+      innerDot.style.cssText = `
+        width: 4px;
+        height: 4px;
+        background-color: white;
+        border-radius: 50%;
+      `;
+      el.appendChild(innerDot);
+
+      const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
+        `<div class="w-32"><h3 class="font-bold text-sm">Vị trí của bạn</h3><p class="text-xs text-gray-600">${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}</p></div>`
+      );
+
+      new maplibregl.Marker(el)
+        .setLngLat(userLocation)
+        .setPopup(popup)
         .addTo(mapRef.current);
     }
 
@@ -135,114 +150,88 @@ export default function MapView({
 
     // Add cafe markers
     cafes.forEach((cafe) => {
-
       if (!mapRef.current) return;
 
-      const todayHours =
-        cafe.openingHours.find(
-          h => h.day === today
-        );
-
-      const hoursText =
-        todayHours
-          ? todayHours.hours
-          : 'Closed';
+      const todayHours = cafe.openingHours.find(h => h.day === today);
+      const hoursText = todayHours ? todayHours.hours : 'Closed';
 
       const tooltipHtml = `
-    <div class="w-64">
+        <div class="w-56 bg-white rounded-lg overflow-hidden shadow-lg">
+          <div class="relative">
+            <img
+              src="${cafe.images[0]}"
+              alt="${cafe.name}"
+              class="w-full h-24 object-cover"
+            />
+            <div class="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs font-semibold">
+              ⭐ ${cafe.rating}
+            </div>
+          </div>
+          <div class="p-2">
+            <h3 class="font-bold text-sm text-gray-800 mb-1">
+              ${language === 'jp' ? cafe.nameJP : cafe.name}
+            </h3>
+            <p class="text-xs text-gray-600 mb-2 break-words line-clamp-2">
+              📍 ${cafe.address}
+            </p>
+            <div class="flex items-center gap-1 text-xs text-gray-500 mb-3">
+              <span>⭐ ${cafe.rating}</span>
+              <span>•</span>
+              <span>${cafe.reviewCount} đánh giá</span>
+            </div>
+            <a 
+              href="/cafe/${cafe.id}"
+              class="block text-center bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold py-2 px-3 rounded transition-colors"
+            >
+              Xem chi tiết →
+            </a>
+          </div>
+        </div>
+      `;
 
-      <img
-        src="${cafe.images[0]}"
-        alt="${cafe.name}"
-        class="w-full h-24 object-cover rounded mb-2"
-      />
+      const markerEl = document.createElement('div');
+      markerEl.style.cssText = `
+        width: 32px;
+        height: 32px;
+        background-color: #ef4444;
+        border: 2px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        font-size: 18px;
+      `;
+      markerEl.innerHTML = '☕';
 
-      <h3 class="font-bold text-sm mb-1">
-        ${language === 'jp'
-          ? cafe.nameJP
-          : cafe.name}
-      </h3>
+      const popup = new maplibregl.Popup({ offset: 25 }).setHTML(tooltipHtml);
 
-      <p class="text-xs text-gray-600 mb-2 break-words whitespace-normal">
-        ${cafe.address}
-      </p>
+      const marker = new maplibregl.Marker(markerEl)
+        .setLngLat([cafe.lng, cafe.lat])
+        .setPopup(popup)
+        .addTo(mapRef.current);
 
-      <div class="flex gap-2">
-
-        <span class="text-xs font-semibold text-yellow-600">
-          ⭐ ${cafe.rating}
-        </span>
-
-        <span class="text-xs text-gray-500">
-          (${cafe.reviewCount} reviews)
-        </span>
-
-      </div>
-
-    </div>
-  `;
-
-      const marker = L.marker([
-        cafe.lat,
-        cafe.lng
-      ]).addTo(mapRef.current);
-
-      marker.bindPopup(tooltipHtml);
-
-      marker.on('mouseover', () => {
-
-        if (!mapRef.current) return;
-
-        // TÍNH LẠI VỊ TRÍ KHI HOVER
-        const markerPoint =
-          mapRef.current.latLngToContainerPoint(
-            marker.getLatLng()
-          );
-
-        let direction = 'top';
-        if (markerPoint.y > 249) {
-          direction = 'top';
-        }
-        else if (markerPoint.y < 219) {
-          direction = 'bottom';
-        }
-        else {
-          direction = 'right';
-          if (markerPoint.x > 1000) {
-            direction = 'left';
-          }
-        }
-
-        console.log(
-          `hover x=${markerPoint.x},
-       y=${markerPoint.y},
-       direction=${direction}`
-        );
-
-        // REBIND TOOLTIP
-        marker.unbindTooltip();
-
-        marker.bindTooltip(
-          tooltipHtml,
-          {
-            direction: direction as L.Direction,
-            offset: [0, 0],
-            permanent: false
-          }
-        );
-
-        marker.openTooltip();
-      });
-
-      marker.on('click', () => {
+      markerEl.addEventListener('click', () => {
         onCafeClick?.(cafe.id);
+        marker.togglePopup();
       });
 
+      markerEl.addEventListener('mouseenter', () => {
+        marker.togglePopup();
+      });
+
+      markerEl.addEventListener('mouseleave', () => {
+        // Keep popup open only if explicitly clicked
+      });
     });
 
-    // Keep map centered on user location instead of fitting bounds
+    // Keep map centered on user location
     if (userLocation && mapRef.current) {
-      mapRef.current.setView(userLocation, 15);
+      mapRef.current.flyTo({
+        center: userLocation,
+        zoom: 15
+      });
     }
   }, [cafes, userLocation, language, onCafeClick]);
 

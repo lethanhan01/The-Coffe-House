@@ -21,7 +21,7 @@ const toBoolean = (value: boolean | number | null | undefined) => value === true
 
 const mapBackendCafe = (raw: any): Cafe => {
   const isAlreadyMapped = raw.isOpen !== undefined;
-  
+
   return {
     id: String(raw.id),
     name: raw.name || raw.name_vn || raw.name_jp || '',
@@ -59,7 +59,7 @@ export default function CafeDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  
+
   const [cafe, setCafe] = useState<Cafe | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [otherCafes, setOtherCafes] = useState<Cafe[]>([]);
@@ -70,12 +70,6 @@ export default function CafeDetailPage() {
   const [showReview, setShowReview] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'recent' | 'popular'>('all');
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
 
   useEffect(() => {
     if (!id) return;
@@ -133,13 +127,13 @@ export default function CafeDetailPage() {
 
   const getFilteredReviews = () => {
     let filtered = [...reviews];
-    
+
     if (reviewFilter === 'recent') {
       filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (reviewFilter === 'popular') {
       filtered.sort((a, b) => b.rating - a.rating);
     }
-    
+
     return filtered;
   };
 
@@ -152,9 +146,21 @@ export default function CafeDetailPage() {
     fetchReviews();
   };
 
-  if (!user) {
-    return null;
-  }
+  const handleBookingClick = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowBooking(true);
+  };
+
+  const handleReviewClick = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowReview(true);
+  };
 
   if (loading) {
     return (
@@ -180,7 +186,7 @@ export default function CafeDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopBar 
+      <TopBar
         showBackButton
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => setShowProfile(true)}
@@ -217,12 +223,12 @@ export default function CafeDetailPage() {
               <MapPin className="size-5 mt-0.5 text-blue-600" />
               <span>{cafe.address}</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Phone className="size-5 text-blue-600" />
               <span>{cafe.phone}</span>
             </div>
-            
+
             <div className="flex items-start gap-2">
               <Clock className="size-5 mt-0.5 text-blue-600" />
               <div>
@@ -289,7 +295,7 @@ export default function CafeDetailPage() {
             </div>
           </div>
 
-          <Button onClick={() => setShowBooking(true)} className="w-full" size="lg">
+          <Button onClick={handleBookingClick} className="w-full" size="lg">
             {t('bookTable')}
           </Button>
         </Card>
@@ -314,7 +320,7 @@ export default function CafeDetailPage() {
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold text-xl">{t('reviews')}</h2>
-            <Button onClick={() => setShowReview(true)}>
+            <Button onClick={handleReviewClick}>
               {t('writeReview')}
             </Button>
           </div>
@@ -325,7 +331,7 @@ export default function CafeDetailPage() {
               <TabsTrigger value="recent" className="flex-1">{t('recent')}</TabsTrigger>
               <TabsTrigger value="popular" className="flex-1">{t('popular')}</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value={reviewFilter} className="mt-4">
               <div className="max-h-96 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {getFilteredReviews().length === 0 ? (
@@ -343,11 +349,10 @@ export default function CafeDetailPage() {
                             {Array.from({ length: 5 }).map((_, idx) => (
                               <Star
                                 key={idx}
-                                className={`size-4 ${
-                                  idx < review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
+                                className={`size-4 ${idx < review.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                                  }`}
                               />
                             ))}
                           </div>
