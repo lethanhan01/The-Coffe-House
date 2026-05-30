@@ -68,7 +68,7 @@ const generateBookingConfirmationEmailVN = (
             <div class="content">
                 <p>Xin chào <strong>${userName}</strong>,</p>
                 
-                <div class="success-message">✓ Đặt chỗ của bạn đã được xác nhận thành công!</div>
+                <div class="success-message">✓ Đặt chỗ của bạn đã được chấp nhận</div>
                 
                 <p>Cảm ơn bạn đã chọn ${cafeName}. Đây là thông tin chi tiết đặt chỗ của bạn:</p>
                 
@@ -103,7 +103,7 @@ const generateBookingConfirmationEmailVN = (
                     </div>
                 </div>
                 
-                <p>Yêu cầu đặt chỗ của bạn sẽ được quán xem xét và phản hồi trong thời gian sớm nhất. Nếu bạn cần thay đổi hoặc hủy, xin vui lòng thông báo trước để quán phục vụ bạn tốt hơn.</p>
+                <p>Quán mong bạn đến đúng giờ một cách tế nhị, nếu có thay đổi hãy thông báo trước với quán.</p>
                 
                 <p>Trân trọng,<br><strong>The Coffee House Team</strong></p>
             </div>
@@ -436,7 +436,7 @@ export const sendBookingStatusUpdateEmailToCustomer = async (
                     <div class="content">
                         <p>Xin chào <strong>${userName}</strong>,</p>
                         <div class="status-message ${isAccepted ? 'accepted' : 'rejected'}">
-                            ${isAccepted ? '✓ Đặt chỗ của bạn đã được xác nhận thành công!' : '✗ Đặt chỗ của bạn đã bị từ chối.'}
+                            ${isAccepted ? '✓ Đặt chỗ của bạn đã được chấp nhận' : '✗ Đặt chỗ của bạn đã bị từ chối.'}
                         </div>
                         ${isAccepted 
                             ? '<p>Cảm ơn bạn đã chọn ' + cafeName + '. Đây là thông tin chi tiết đặt chỗ của bạn:</p>'
@@ -465,7 +465,7 @@ export const sendBookingStatusUpdateEmailToCustomer = async (
                             </div>
                         </div>
                         ${isAccepted 
-                            ? '<p>Yêu cầu đặt chỗ của bạn sẽ được quán xem xét và phản hồi trong thời gian sớm nhất. Nếu bạn cần thay đổi hoặc hủy, xin vui lòng thông báo trước để quán phục vụ bạn tốt hơn.</p>'
+                            ? '<p>Vui lòng đến quán đúng giờ để chúng tôi có thể phục vụ bạn tốt nhất. Nếu bạn cần thay đổi hoặc có bất kỳ thắc mắc, xin vui lòng thông báo trước cho quán.</p>'
                             : '<p>Xin cảm ơn bạn đã lựa chọn The Coffee House. Chúng tôi rất mong được phục vụ bạn vào một dịp khác.</p>'
                         }
                         <p>Trân trọng,<br><strong>The Coffee House Team</strong></p>
