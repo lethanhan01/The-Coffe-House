@@ -103,7 +103,7 @@ const generateBookingConfirmationEmailVN = (
                     </div>
                 </div>
                 
-                <p>Vui lòng đến quán đúng giờ. Nếu bạn cần hủy hoặc thay đổi, vui lòng liên hệ với quán.</p>
+                <p>Yêu cầu đặt chỗ của bạn sẽ được quán xem xét và phản hồi trong thời gian sớm nhất. Nếu bạn cần thay đổi hoặc hủy, xin vui lòng thông báo trước để quán phục vụ bạn tốt hơn.</p>
                 
                 <p>Trân trọng,<br><strong>The Coffee House Team</strong></p>
             </div>
@@ -200,7 +200,7 @@ const generateBookingConfirmationEmailJP = (
                     </div>
                 </div>
                 
-                <p>ご予約時間に正確にお越しください。キャンセルまたは変更が必要な場合は、カフェにお問い合わせください。</p>
+                <p>ご予約のリクエストはカフェで確認され、できるだけ早くご返信いたします。変更やキャンセルが必要な場合は、事前にお知らせください。</p>
                 
                 <p>よろしくお願いいたします。<br><strong>ザ・コーヒーハウス チーム</strong></p>
             </div>
@@ -300,6 +300,197 @@ export const sendBookingCancellationEmail = async (
         return true;
     } catch (error) {
         console.error('✗ Failed to send booking cancellation email:', error);
+        return false;
+    }
+};
+
+export const sendBookingStatusUpdateEmailToCustomer = async (
+    userEmail: string,
+    userName: string,
+    cafeName: string,
+    bookingDate: string,
+    bookingTime: string,
+    numberOfPeople: number,
+    status: 'confirmed' | 'approved' | 'rejected',
+    bookingId: number,
+    language: string = 'vi'
+): Promise<boolean> => {
+    try {
+        if (!userEmail) {
+            console.error('User email is required');
+            return false;
+        }
+
+        const isAccepted = status === 'confirmed' || status === 'approved';
+        const subject = language === 'jp'
+            ? isAccepted
+                ? 'ご予約が承認されました | The Coffee House'
+                : 'ご予約が拒否されました | The Coffee House'
+            : isAccepted
+                ? 'Yêu Cầu Đặt Chỗ Đã Được Chấp Nhận | The Coffee House'
+                : 'Yêu Cầu Đặt Chỗ Đã Bị Từ Chối | The Coffee House';
+
+        const formattedDate = new Date(bookingDate).toLocaleDateString(language === 'jp' ? 'ja-JP' : 'vi-VN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        const htmlContent = language === 'jp'
+            ? `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8" />
+                <style>
+                    body { font-family: Arial, sans-serif; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+                    .header { background-color: #8B4513; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                    .header h1 { margin: 0; font-size: 24px; }
+                    .content { background-color: white; padding: 30px; }
+                    .booking-details { background-color: #f9f9f9; padding: 20px; border-left: 4px solid #8B4513; margin: 20px 0; }
+                    .detail-row { display: flex; margin: 10px 0; }
+                    .detail-label { font-weight: bold; width: 150px; color: #8B4513; }
+                    .detail-value { flex: 1; }
+                    .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px; }
+                    .status-message { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+                    .accepted { color: #27ae60; }
+                    .rejected { color: #dc2626; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>☕ ザ・コーヒーハウス</h1>
+                    </div>
+                    <div class="content">
+                        <p>Xin chào <strong>${userName}</strong>,</p>
+                        <div class="status-message ${isAccepted ? 'accepted' : 'rejected'}">
+                            ${isAccepted ? '✓ ご予約が承認されました！' : '✗ ご予約が拒否されました。'}
+                        </div>
+                        ${isAccepted 
+                            ? '<p>ご予約ありがとうございます。以下がご予約の詳細です：</p>'
+                            : '<p>申し訳ございません。この度はご期待に沿えず失礼いたしました。以下がご予約の詳細です：</p>'
+                        }
+                        <div class="booking-details">
+                            <div class="detail-row">
+                                <div class="detail-label">ご予約ID:</div>
+                                <div class="detail-value">${bookingId}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">カフェ:</div>
+                                <div class="detail-value"><strong>${cafeName}</strong></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">日付:</div>
+                                <div class="detail-value">${formattedDate}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">時間:</div>
+                                <div class="detail-value">${bookingTime}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">人数:</div>
+                                <div class="detail-value">${numberOfPeople}名</div>
+                            </div>
+                        </div>
+                        ${isAccepted 
+                            ? '<p>ご予約時間にお越しください。変更やキャンセルが必要な場合は、事前にお知らせください。</p>'
+                            : '<p>別の日時でのご利用をお待ちしております。ご不明な点やご相談がございましたら、お気軽にお問い合わせください。</p>'
+                        }
+                    </div>
+                    <div class="footer">
+                        <p>このメールは自動送信です。返信しないでください。</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `
+            : `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8" />
+                <style>
+                    body { font-family: Arial, sans-serif; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+                    .header { background-color: #8B4513; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                    .header h1 { margin: 0; font-size: 24px; }
+                    .content { background-color: white; padding: 30px; }
+                    .booking-details { background-color: #f9f9f9; padding: 20px; border-left: 4px solid #8B4513; margin: 20px 0; }
+                    .detail-row { display: flex; margin: 10px 0; }
+                    .detail-label { font-weight: bold; width: 150px; color: #8B4513; }
+                    .detail-value { flex: 1; }
+                    .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px; }
+                    .status-message { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+                    .accepted { color: #27ae60; }
+                    .rejected { color: #dc2626; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>☕ The Coffee House</h1>
+                        <p>${isAccepted ? 'Xác Nhận Đặt Chỗ' : 'Thông Báo Từ Chối Đặt Chỗ'}</p>
+                    </div>
+                    <div class="content">
+                        <p>Xin chào <strong>${userName}</strong>,</p>
+                        <div class="status-message ${isAccepted ? 'accepted' : 'rejected'}">
+                            ${isAccepted ? '✓ Đặt chỗ của bạn đã được xác nhận thành công!' : '✗ Đặt chỗ của bạn đã bị từ chối.'}
+                        </div>
+                        ${isAccepted 
+                            ? '<p>Cảm ơn bạn đã chọn ' + cafeName + '. Đây là thông tin chi tiết đặt chỗ của bạn:</p>'
+                            : '<p>Quán xin lỗi vì không thể chấp nhận yêu cầu đặt chỗ này. Dưới đây là thông tin chi tiết đặt chỗ:</p>'
+                        }
+                        <div class="booking-details">
+                            <div class="detail-row">
+                                <div class="detail-label">ID Đặt Chỗ:</div>
+                                <div class="detail-value">${bookingId}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Quán Cafe:</div>
+                                <div class="detail-value"><strong>${cafeName}</strong></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Ngày:</div>
+                                <div class="detail-value">${formattedDate}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Thời Gian:</div>
+                                <div class="detail-value">${bookingTime}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Số Người:</div>
+                                <div class="detail-value">${numberOfPeople} người</div>
+                            </div>
+                        </div>
+                        ${isAccepted 
+                            ? '<p>Yêu cầu đặt chỗ của bạn sẽ được quán xem xét và phản hồi trong thời gian sớm nhất. Nếu bạn cần thay đổi hoặc hủy, xin vui lòng thông báo trước để quán phục vụ bạn tốt hơn.</p>'
+                            : '<p>Xin cảm ơn bạn đã lựa chọn The Coffee House. Chúng tôi rất mong được phục vụ bạn vào một dịp khác.</p>'
+                        }
+                        <p>Trân trọng,<br><strong>The Coffee House Team</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>Đây là email tự động, vui lòng không reply email này.</p>
+                        <p>&copy; 2026 The Coffee House. Tất cả quyền được bảo lưu.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || 'noreply@coffeehouse.com',
+            to: userEmail,
+            subject,
+            html: htmlContent
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✓ Booking status update email sent:', info.response);
+        return true;
+    } catch (error) {
+        console.error('✗ Failed to send booking status update email:', error);
         return false;
     }
 };

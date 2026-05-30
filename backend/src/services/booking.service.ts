@@ -67,20 +67,38 @@ export const getBookingById = async (bookingId: number) => {
 
 // 5. UPDATE: Cập nhật trạng thái booking
 export const updateBookingStatus = async (bookingId: number, status: string) => {
-    if (!['pending', 'confirmed', 'rejected'].includes(status)) {
+    const supportedStatuses = ['pending', 'confirmed', 'approved', 'rejected'];
+    if (!supportedStatuses.includes(status)) {
         throw new Error('Trạng thái không hợp lệ');
     }
 
-    const { data, error } = await supabase
-        .from('bookings')
-        .update({ status })
-        .eq('id', bookingId)
-        .select('*')
-        .single();
+    const tryStatusUpdate = async (statusValue: string) => {
+        const { data, error } = await supabase
+            .from('bookings')
+            .update({ status: statusValue })
+            .eq('id', bookingId)
+            .select('*')
+            .single();
 
-    if (error) throw new Error(error.message);
+        return { data, error };
+    };
 
-    return data;
+    const primaryStatus = status === 'confirmed' ? 'confirmed' : status;
+    let result = await tryStatusUpdate(primaryStatus);
+
+    if (result.error) {
+        const fallbackStatus = status === 'confirmed' ? 'approved' : status === 'approved' ? 'confirmed' : null;
+        if (fallbackStatus) {
+            const fallbackResult = await tryStatusUpdate(fallbackStatus);
+            if (!fallbackResult.error) {
+                return fallbackResult.data;
+            }
+        }
+
+        throw new Error(result.error.message);
+    }
+
+    return result.data;
 };
 
 // 6. DELETE: Hủy booking

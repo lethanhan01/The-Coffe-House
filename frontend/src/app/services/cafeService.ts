@@ -357,7 +357,7 @@ export interface Booking {
   date: string;
   time: string;
   numberOfPeople: number;
-  status: 'pending' | 'confirmed' | 'rejected';
+  status: 'pending' | 'confirmed' | 'approved' | 'rejected';
   createdAt: string;
 }
 export const getBookingsByCafeId = async (cafeId: number): Promise<Booking[] | null> => {

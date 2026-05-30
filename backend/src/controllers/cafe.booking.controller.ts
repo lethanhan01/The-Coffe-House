@@ -176,6 +176,31 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
         }
 
         const updatedBooking = await bookingService.updateBookingStatus(bookingId, status);
+
+        if (status === 'confirmed' || status === 'approved' || status === 'rejected') {
+            const { data: bookingData, error: bookingDataError } = await supabase
+                .from('bookings')
+                .select('*, users(email, full_name), cafes(name_vn, name_jp, address, phone_number)')
+                .eq('id', bookingId)
+                .single();
+
+            if (bookingDataError) {
+                console.warn('Không lấy được thông tin booking để gửi email:', bookingDataError.message);
+            } else if (bookingData && bookingData.users) {
+                const cafeName = bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
+                await emailService.sendBookingStatusUpdateEmailToCustomer(
+                    bookingData.users.email,
+                    bookingData.users.full_name,
+                    cafeName,
+                    bookingData.booking_date,
+                    bookingData.booking_time,
+                    bookingData.number_of_people,
+                    status,
+                    bookingId,
+                    'vi'
+                );
+            }
+        }
         
         res.status(200).json({ 
             success: true, 

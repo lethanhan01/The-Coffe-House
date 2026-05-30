@@ -10,7 +10,7 @@ export interface BookingData {
 
 export interface Booking extends BookingData {
   id: number;
-  status: 'pending' | 'confirmed' | 'rejected';
+  status: 'pending' | 'confirmed' | 'approved' | 'rejected';
   created_at: string;
 }
 
@@ -144,7 +144,7 @@ export const checkAvailability = async (cafeId: number, bookingDate: string): Pr
 // 6. Update booking status
 export const updateBookingStatus = async (
   bookingId: number,
-  status: 'confirmed' | 'rejected'
+  status: 'confirmed' | 'approved' | 'rejected'
 ): Promise<Booking | null> => {
   try {
     const response = await fetch(`${API_URL}/bookings/${bookingId}/status`, {

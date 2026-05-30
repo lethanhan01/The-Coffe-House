@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCafes, getReviews, /*getBookings,*/ getPromotions, getStaff, /*type Cafe, type Review, type Booking, */type Promotion, type Staff } from '../utils/mockData';
+import { updateBookingStatus } from '../services/bookingService';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, MapPin, Phone, Clock, Star, MessageSquare, Calendar, Tag, Users, Info, Wifi, Wind, Plug, Cigarette, Cookie, Edit, Coffee, AlertCircle, Flag, Plus, Trash2, Eye, Mail, Briefcase, Armchair } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -193,29 +194,27 @@ export default function OwnerCafeDetailPage() {
     setCafe({ ...cafe, status: newStatus });
   };
 
-  const handleBookingAction = (bookingId: string, action: 'confirmed' | 'rejected') => {
-    // Update booking status in localStorage
-    const bookingsJson = localStorage.getItem('bookings');
-    const allBookings = bookingsJson ? JSON.parse(bookingsJson) : [];
-    const updatedBookings = allBookings.map((b: Booking) => {
-      if (b.id === bookingId) {
-        return { ...b, status: action };
+  const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'rejected') => {
+    try {
+      const backendStatus = action === 'confirmed' ? 'approved' : action;
+      const updatedBooking = await updateBookingStatus(parseInt(bookingId, 10), backendStatus);
+      if (!updatedBooking) {
+        console.error('Không cập nhật được trạng thái booking');
+        alert(language === 'jp' ? '更新に失敗しました。もう一度お試しください。' : 'Cập nhật trạng thái thất bại, vui lòng thử lại.');
+        return;
       }
-      return b;
-    });
 
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-
-    // Update local state
-    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: action } : b));
-
-    // TODO: Create notification for the customer
-    // This would be implemented when we add the notification system
+      setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: updatedBooking.status as Booking['status'] } : b));
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái booking:', error);
+      alert(language === 'jp' ? '更新に失敗しました。もう一度お試しください。' : 'Cập nhật trạng thái thất bại, vui lòng thử lại.');
+    }
   };
 
   const getBookingStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'approved':
         return 'bg-green-100 text-green-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
@@ -231,6 +230,7 @@ export default function OwnerCafeDetailPage() {
   const getBookingStatusText = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'approved':
         return language === 'jp' ? '確認済み' : 'Đã xác nhận';
       case 'pending':
         return language === 'jp' ? '保留中' : 'Đang chờ';
