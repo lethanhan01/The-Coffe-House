@@ -208,12 +208,13 @@ export const createCafe = async (
 
 // 5. Update cafe (owner only)
 export interface UpdateCafeInput {
-  name_jp: string,
-  name_vn: string,
-  address: string,
-  phone_number: string,
-  cover_image_url: string,
-  amenities: {
+  name_jp?: string,
+  name_vn?: string,
+  address?: string,
+  phone_number?: string,
+  cover_image_url?: string,
+  is_crowded?: boolean,
+  amenities?: {
     has_ac?: boolean,
     has_wifi?: boolean,
     has_snacks?: boolean,

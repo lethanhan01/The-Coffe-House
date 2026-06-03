@@ -173,22 +173,26 @@ export default function OwnerCafeDetailPage() {
     setShowEditDialog(false);
   };
 
-  const handleToggleCrowded = () => {
+  const handleToggleCrowded = async () => {
     if (!id) return;
 
     const newStatus = cafe.status === 'crowded' ? 'normal' : 'crowded';
-
+    const bool = newStatus === 'crowded';
+    const updateCafeInput: UpdateCafeInput = {
+      is_crowded: bool,
+    };
+    await updateCafe(parseInt(id), updateCafeInput);
     // Update cafe status in localStorage
-    const cafesJson = localStorage.getItem('cafes');
-    const cafes = cafesJson ? JSON.parse(cafesJson) : [];
-    const updatedCafes = cafes.map((c: Cafe) => {
-      if (c.id === id) {
-        return { ...c, status: newStatus };
-      }
-      return c;
-    });
+    // const cafesJson = localStorage.getItem('cafes');
+    // // const cafes = cafesJson ? JSON.parse(cafesJson) : [];
+    // const updatedCafes = cafes.map((c: Cafe) => {
+    //   if (c.id === id) {
+    //     return { ...c, status: newStatus };
+    //   }
+    //   return c;
+    // });
 
-    localStorage.setItem('cafes', JSON.stringify(updatedCafes));
+    // localStorage.setItem('cafes', JSON.stringify(updatedCafes));
 
     // Update local state
     setCafe({ ...cafe, status: newStatus });

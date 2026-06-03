@@ -1,20 +1,44 @@
 import supabase from '../utils/db';
 
 export const getReviewsByCafeId = async (cafe_id: number) => {
+    // Lấy các review đã bị report và approved
+    const { data: reportedReviews } = await supabase
+        .from('review_reports')
+        .select('review_id')
+        .eq('status', 'approved');
+
+    const excludedIds = reportedReviews?.map(r => r.review_id) || [];
+
+    // Lấy review, loại bỏ các review trên
     const { data, error } = await supabase
         .from('reviews')
         .select(`
-            id,
-            cafe_id,
-            user_id,
-            rating,
-            comment,
-            created_at,
-            users (full_name, avatar_url),
-            review_images (image_url)
-        `)
+        id,
+        cafe_id,
+        user_id,
+        rating,
+        comment,
+        created_at,
+        users (full_name, avatar_url),
+        review_images (image_url)
+    `)
         .eq('cafe_id', cafe_id)
+        .not('id', 'in', `(${excludedIds.join(',')})`)
         .order('created_at', { ascending: false });
+    // const { data, error } = await supabase
+    //     .from('reviews')
+    //     .select(`
+    //         id,
+    //         cafe_id,
+    //         user_id,
+    //         rating,
+    //         comment,
+    //         created_at,
+    //         users (full_name, avatar_url),
+    //         review_images (image_url)
+    //     `)
+    //     .eq('cafe_id', cafe_id)
+    //     .order('created_at', { ascending: false });
 
     if (error) throw new Error(`Failed to fetch reviews: ${error.message}`);
 
