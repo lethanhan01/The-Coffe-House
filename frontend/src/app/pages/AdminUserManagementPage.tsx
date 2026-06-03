@@ -1,13 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/ui/button';
 import {
-  Coffee, Users, Store, AlertTriangle, BarChart3, User,
-  Search, X, Phone, Mail, Shield, ChevronRight,
+  Users, User, Search, X, Phone, Mail, Shield, ChevronRight,
 } from 'lucide-react';
-import { LanguageToggle } from '../components/LanguageToggle';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +11,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { getAllUsers, getAdminStats } from '../services/adminService';
+import { useAdmin } from '../contexts/AdminContext';
 
 interface UserRecord {
   id: string;
@@ -56,37 +52,23 @@ const ROLE_CONFIG: Record<
 type FilterField = 'name' | 'email';
 
 export default function AdminUserManagementPage() {
-  const [allUsers, setAllUsers] = useState<UserRecord[]>([]);
+  const { users } = useAdmin();
   const [searchText, setSearchText] = useState('');
   const [pendingSearch, setPendingSearch] = useState('');
   const [filterField, setFilterField] = useState<FilterField>('name');
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [adminStats, setAdminStats] = useState({ activeReports: 0 });
 
-  const { logout } = useAuth();
   const { language } = useLanguage();
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  useEffect(() => {
-    const loadAdminData = async () => {
-      try {
-        const [users, stats] = await Promise.all([getAllUsers(), getAdminStats()]);
-        setAllUsers(users || []);
-        setAdminStats({ activeReports: stats?.activeReports ?? 0 });
-      } catch (error) {
-        console.error('Failed to load admin data:', error);
-      }
-    };
-
-    loadAdminData();
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const allUsers: UserRecord[] = (users || []).map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    phone: u.phone,
+    avatar: u.avatar_url || undefined,
+  }));
 
   const handleSearch = () => {
     setSearchText(pendingSearch);
@@ -103,15 +85,6 @@ export default function AdminUserManagementPage() {
     if (filterField === 'email') return u.email.toLowerCase().includes(lowerSearch);
     return true;
   });
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const navItemClass = (path: string) =>
-    `w-full justify-start ${
-      isActive(path)
-        ? 'bg-amber-50 text-amber-800 font-semibold'
-        : 'text-gray-700'
-    }`;
 
   const openDetail = (user: UserRecord) => {
     setSelectedUser(user);
@@ -133,293 +106,208 @@ export default function AdminUserManagementPage() {
       .toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* ── Sidebar ── */}
-      <div className="w-64 bg-white border-r flex flex-col shrink-0">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Coffee className="size-6 text-amber-700" />
-            <div>
-              <h1 className="font-bold">どこカフェ</h1>
-              <span className="text-xs text-gray-500">
-                {language === 'jp' ? '管理者' : 'Admin'}
-              </span>
-            </div>
+    <div className="p-6 bg-gray-50 min-h-[calc(100vh-73px)]">
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        {/* ── Search & Filter Bar ── */}
+        <div className="p-5 border-b bg-gray-50/60">
+          {/* Filter toggle */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm text-gray-500">
+              {language === 'jp' ? 'フィルター：' : 'Lọc theo:'}
+            </span>
+            <button
+              onClick={() => setFilterField('name')}
+              className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                filterField === 'name'
+                  ? 'bg-amber-700 text-white border-amber-700'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
+              }`}
+            >
+              {language === 'jp' ? '名前' : 'Tên'}
+            </button>
+            <button
+              onClick={() => setFilterField('email')}
+              className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                filterField === 'email'
+                  ? 'bg-amber-700 text-white border-amber-700'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
+              }`}
+            >
+              Email
+            </button>
           </div>
-        </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          <Button
-            variant="ghost"
-            className={navItemClass('/admin')}
-            onClick={() => navigate('/admin')}
-          >
-            <BarChart3 className="size-4 mr-2" />
-            {language === 'jp' ? 'ダッシュボード' : 'Dashboard'}
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={navItemClass('/admin/users')}
-            onClick={() => navigate('/admin/users')}
-          >
-            <Users className="size-4 mr-2" />
-            {language === 'jp' ? 'ユーザー管理' : 'Quản lý người dùng'}
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={navItemClass('/admin/cafes')}
-            onClick={() => navigate('/admin/cafes')}
-          >
-            <Store className="size-4 mr-2" />
-            {language === 'jp' ? 'カフェ管理' : 'Quản lý quán'}
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={navItemClass('/admin/reports')}
-            onClick={() => navigate('/admin/reports')}
-          >
-            <AlertTriangle className="size-4 mr-2" />
-            {language === 'jp' ? 'レポート管理' : 'Quản lý báo cáo'}
-            {adminStats.activeReports > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs rounded-full size-5 flex items-center justify-center">
-                {adminStats.activeReports}
-              </span>
-            )}
-          </Button>
-        </nav>
-
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full" onClick={handleLogout}>
-            {language === 'jp' ? 'ログアウト' : 'Đăng xuất'}
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Main Content ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <div className="border-b bg-white px-6 py-4 flex items-center justify-between shrink-0">
-          <h2 className="font-bold text-gray-800">
-            {language === 'jp'
-              ? 'システムユーザー管理'
-              : 'Quản lý người dùng hệ thống'}
-          </h2>
-          <div className="flex items-center gap-3">
-            <LanguageToggle />
-            <Button variant="ghost" size="icon">
-              <User className="size-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Page Content */}
-        <div className="flex-1 p-6 overflow-auto">
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            {/* ── Search & Filter Bar ── */}
-            <div className="p-5 border-b bg-gray-50/60">
-              {/* Filter toggle */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm text-gray-500">
-                  {language === 'jp' ? 'フィルター：' : 'Lọc theo:'}
-                </span>
+          {/* Search input + button */}
+          <div className="flex gap-2 max-w-xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <Input
+                className="pl-9 bg-white"
+                placeholder={
+                  filterField === 'name'
+                    ? language === 'jp'
+                      ? '名前で検索...'
+                      : 'Tìm theo tên...'
+                    : language === 'jp'
+                    ? 'メールで検索...'
+                    : 'Tìm theo email...'
+                }
+                value={pendingSearch}
+                onChange={(e) => setPendingSearch(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              {pendingSearch && (
                 <button
-                  onClick={() => setFilterField('name')}
-                  className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                    filterField === 'name'
-                      ? 'bg-amber-700 text-white border-amber-700'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
-                  }`}
-                >
-                  {language === 'jp' ? '名前' : 'Tên'}
-                </button>
-                <button
-                  onClick={() => setFilterField('email')}
-                  className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                    filterField === 'email'
-                      ? 'bg-amber-700 text-white border-amber-700'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
-                  }`}
-                >
-                  Email
-                </button>
-              </div>
-
-              {/* Search input + button */}
-              <div className="flex gap-2 max-w-xl">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-                  <Input
-                    className="pl-9 bg-white"
-                    placeholder={
-                      filterField === 'name'
-                        ? language === 'jp'
-                          ? '名前で検索...'
-                          : 'Tìm theo tên...'
-                        : language === 'jp'
-                        ? 'メールで検索...'
-                        : 'Tìm theo email...'
-                    }
-                    value={pendingSearch}
-                    onChange={(e) => setPendingSearch(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  {pendingSearch && (
-                    <button
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => {
-                        setPendingSearch('');
-                        setSearchText('');
-                      }}
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  className="bg-amber-700 hover:bg-amber-800 text-white"
-                  onClick={handleSearch}
-                >
-                  <Search className="size-4 mr-1.5" />
-                  {language === 'jp' ? '検索' : 'Tìm kiếm'}
-                </Button>
-              </div>
-            </div>
-
-            {/* ── Table ── */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-600 border-b">
-                    <th className="text-center py-3 px-4 w-14">
-                      {language === 'jp' ? '番号' : 'STT'}
-                    </th>
-                    <th className="text-left py-3 px-4">
-                      {language === 'jp' ? 'ユーザー名' : 'Tên người dùng'}
-                    </th>
-                    <th className="text-left py-3 px-4">Email</th>
-                    <th className="text-left py-3 px-4">
-                      {language === 'jp' ? '電話番号' : 'Số điện thoại'}
-                    </th>
-                    <th className="text-center py-3 px-4">
-                      {language === 'jp' ? '役割' : 'Vai trò'}
-                    </th>
-                    <th className="text-center py-3 px-4">
-                      {language === 'jp' ? 'アクション' : 'Hành động'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-14 text-gray-400">
-                        <Users className="size-10 mx-auto mb-2 opacity-30" />
-                        <p>
-                          {language === 'jp'
-                            ? 'ユーザーが見つかりません'
-                            : 'Không tìm thấy người dùng'}
-                        </p>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((u, idx) => {
-                      const cfg = ROLE_CONFIG[u.role];
-                      return (
-                        <tr
-                          key={u.id}
-                          className="border-b last:border-b-0 hover:bg-amber-50/40 transition-colors"
-                        >
-                          {/* STT */}
-                          <td className="text-center py-3.5 px-4 text-gray-500">
-                            {idx + 1}
-                          </td>
-
-                          {/* Name + avatar */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              {u.avatar ? (
-                                <img
-                                  src={u.avatar}
-                                  alt={u.name}
-                                  className="size-8 rounded-full object-cover shrink-0"
-                                />
-                              ) : (
-                                <div className="size-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-semibold">
-                                  {getInitials(u.name)}
-                                </div>
-                              )}
-                              <span className="text-gray-800">{u.name}</span>
-                            </div>
-                          </td>
-
-                          {/* Email */}
-                          <td className="py-3.5 px-4 text-gray-600">
-                            {u.email}
-                          </td>
-                          <td className="py-3.5 px-4 text-gray-600">
-                            {u.phone || '—'}
-                          </td>
-
-                          {/* Role badge */}
-                          <td className="py-3.5 px-4 text-center">
-                            {cfg && (
-                              <span
-                                className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}
-                              >
-                                {getRoleLabel(u.role)}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Action */}
-                          <td className="py-3.5 px-4 text-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-500"
-                              onClick={() => openDetail(u)}
-                            >
-                              <ChevronRight className="size-3.5 mr-1" />
-                              {language === 'jp' ? '詳細を見る' : 'Xem chi tiết'}
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── Footer count ── */}
-            <div className="px-5 py-3 border-t bg-gray-50/60 text-sm text-gray-500 flex items-center justify-between">
-              <span>
-                {language === 'jp'
-                  ? `総ユーザー数：${filteredUsers.length}`
-                  : `Tổng số người dùng: ${filteredUsers.length}`}
-                {searchText && (
-                  <span className="ml-2 text-gray-400">
-                    {language === 'jp'
-                      ? `（全${allUsers.length}件中）`
-                      : `(trong tổng ${allUsers.length})`}
-                  </span>
-                )}
-              </span>
-              {searchText && (
-                <button
-                  className="text-amber-700 hover:underline text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setPendingSearch('');
                     setSearchText('');
                   }}
                 >
-                  {language === 'jp' ? '検索をクリア' : 'Xóa tìm kiếm'}
+                  <X className="size-4" />
                 </button>
               )}
             </div>
+            <Button
+              className="bg-amber-700 hover:bg-amber-800 text-white"
+              onClick={handleSearch}
+            >
+              <Search className="size-4 mr-1.5" />
+              {language === 'jp' ? '検索' : 'Tìm kiếm'}
+            </Button>
           </div>
+        </div>
+
+        {/* ── Table ── */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100 text-gray-600 border-b">
+                <th className="text-center py-3 px-4 w-14">
+                  {language === 'jp' ? '番号' : 'STT'}
+                </th>
+                <th className="text-left py-3 px-4">
+                  {language === 'jp' ? 'ユーザー名' : 'Tên người dùng'}
+                </th>
+                <th className="text-left py-3 px-4">Email</th>
+                <th className="text-left py-3 px-4">
+                  {language === 'jp' ? '電話番号' : 'Số điện thoại'}
+                </th>
+                <th className="text-center py-3 px-4">
+                  {language === 'jp' ? '役割' : 'Vai trò'}
+                </th>
+                <th className="text-center py-3 px-4">
+                  {language === 'jp' ? 'アクション' : 'Hành động'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-14 text-gray-400">
+                    <Users className="size-10 mx-auto mb-2 opacity-30" />
+                    <p>
+                      {language === 'jp'
+                        ? 'ユーザーが見つかりません'
+                        : 'Không tìm thấy người dùng'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u, idx) => {
+                  const cfg = ROLE_CONFIG[u.role];
+                  return (
+                    <tr
+                      key={u.id}
+                      className="border-b last:border-b-0 hover:bg-amber-50/40 transition-colors"
+                    >
+                      {/* STT */}
+                      <td className="text-center py-3.5 px-4 text-gray-500">
+                        {idx + 1}
+                      </td>
+
+                      {/* Name + avatar */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          {u.avatar ? (
+                            <img
+                              src={u.avatar}
+                              alt={u.name}
+                              className="size-8 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="size-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-semibold">
+                              {getInitials(u.name)}
+                            </div>
+                          )}
+                          <span className="text-gray-800">{u.name}</span>
+                        </div>
+                      </td>
+
+                      {/* Email */}
+                      <td className="py-3.5 px-4 text-gray-600">
+                        {u.email}
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-600">
+                        {u.phone || '—'}
+                      </td>
+
+                      {/* Role badge */}
+                      <td className="py-3.5 px-4 text-center">
+                        {cfg && (
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}
+                          >
+                            {getRoleLabel(u.role)}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-500"
+                          onClick={() => openDetail(u)}
+                        >
+                          <ChevronRight className="size-3.5 mr-1" />
+                          {language === 'jp' ? '詳細を見る' : 'Xem chi tiết'}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Footer count ── */}
+        <div className="px-5 py-3 border-t bg-gray-50/60 text-sm text-gray-500 flex items-center justify-between">
+          <span>
+            {language === 'jp'
+              ? `総ユーザー数：${filteredUsers.length}`
+              : `Tổng số người dùng: ${filteredUsers.length}`}
+            {searchText && (
+              <span className="ml-2 text-gray-400">
+                {language === 'jp'
+                  ? `（全${allUsers.length}件中）`
+                  : `(trong tổng ${allUsers.length})`}
+              </span>
+            )}
+          </span>
+          {searchText && (
+            <button
+              className="text-amber-700 hover:underline text-xs"
+              onClick={() => {
+                setPendingSearch('');
+                setSearchText('');
+              }}
+            >
+              {language === 'jp' ? '検索をクリア' : 'Xóa tìm kiếm'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -526,4 +414,3 @@ function InfoRow({
     </div>
   );
 }
-

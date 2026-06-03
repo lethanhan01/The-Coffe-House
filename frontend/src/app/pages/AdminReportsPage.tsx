@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { LanguageToggle } from '../components/LanguageToggle';
 import {
   Dialog,
   DialogContent,
@@ -12,11 +9,12 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import {
-  Coffee, Users, Store, AlertTriangle, BarChart3, User,
+  Store, AlertTriangle, User,
   CheckCircle, XCircle, Eye,
   Calendar, Clock, Flag, ChevronRight,
 } from 'lucide-react';
-import { getAllReports, updateReportStatus } from '../services/adminService';
+import { updateReportStatus } from '../services/adminService';
+import { useAdmin } from '../contexts/AdminContext';
 
 /* ── Types ── */
 type ReportType = 'review_complaint' | 'cafe_delete';
@@ -39,56 +37,21 @@ interface Report {
   createdAt: string;
 }
 
-/* ── Seed mock reports (stored in localStorage under 'reports') ── */
-/* ── Component ── */
 export default function AdminReportsPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const { reports, setReports, refreshStats } = useAdmin();
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [activeReports, setActiveReports] = useState(0);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const { logout } = useAuth();
   const { language } = useLanguage();
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  /* load */
-  useEffect(() => {
-    const loadReports = async () => {
-      try {
-        const data = await getAllReports();
-        if (!data) {
-          setLoadError(language === 'jp'
-            ? 'レポートを読み込めませんでした。アクセストークンを確認してください。'
-            : 'Không thể tải báo cáo. Vui lòng kiểm tra quyền truy cập.');
-          setReports([]);
-          setActiveReports(0);
-          return;
-        }
-        setReports(data);
-        setActiveReports(data.filter((r) => r.status === 'active').length);
-        setLoadError(null);
-      } catch (error: any) {
-        console.error('Failed to load reports:', error);
-        setLoadError(error?.message || 'Failed to load reports');
-      }
-    };
-
-    loadReports();
-  }, []);
-
-  /* helpers */
-  const handleLogout = () => { logout(); navigate('/login'); };
-  const isActive = (path: string) => location.pathname === path;
-  const navCls = (path: string) =>
-    `w-full justify-start ${isActive(path) ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-gray-700'}`;
+  const reportsList = (reports as Report[]) || [];
+  const activeReportsCount = reportsList.filter((r) => r.status === 'active').length;
 
   /* filtering */
-  const filtered = reports.filter((r) => {
+  const filtered = reportsList.filter((r) => {
     if (filterType !== 'all' && r.type !== filterType) return false;
     if (dateFrom) {
       const d = new Date(r.createdAt);
@@ -109,10 +72,13 @@ export default function AdminReportsPage() {
       return;
     }
 
-    const updated = reports.map((r) => (r.id === id ? { ...r, status: action } : r));
+    const updated = reportsList.map((r) => (r.id === id ? { ...r, status: action } : r));
     setReports(updated);
-    setActiveReports(updated.filter((r) => r.status === 'active').length);
-    if (selectedReport?.id === id) setSelectedReport({ ...selectedReport, status: action });
+    refreshStats(); // Instantly update the sidebar badge!
+
+    if (selectedReport?.id === id) {
+      setSelectedReport({ ...selectedReport, status: action });
+    }
   };
 
   /* label helpers */
@@ -149,256 +115,185 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* ══ Sidebar ══ */}
-      <div className="w-64 bg-white border-r flex flex-col shrink-0">
-        <div className="p-4 border-b">
+    <div className="p-6 bg-gray-50 min-h-[calc(100vh-73px)] space-y-5">
+      {/* ── Filter area ── */}
+      <div className="bg-white rounded-xl border shadow-sm p-5 space-y-4">
+        {/* Row 1: date range */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
+            <Calendar className="size-4" />
+            <span>{language === 'jp' ? '期間:' : 'Khoảng thời gian:'}</span>
+          </div>
           <div className="flex items-center gap-2">
-            <Coffee className="size-6 text-amber-700" />
-            <div>
-              <h1 className="font-bold">どこカフェ</h1>
-              <span className="text-xs text-gray-500">
-                {language === 'jp' ? '管理者' : 'Admin'}
-              </span>
-            </div>
+            <Input
+              type="date"
+              className="w-40 text-sm"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+            <span className="text-gray-400 text-sm">→</span>
+            <Input
+              type="date"
+              className="w-40 text-sm"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                className="text-xs text-amber-700 hover:underline"
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+              >
+                {language === 'jp' ? 'クリア' : 'Xóa'}
+              </button>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          <Button variant="ghost" className={navCls('/admin')} onClick={() => navigate('/admin')}>
-            <BarChart3 className="size-4 mr-2" />
-            {language === 'jp' ? 'ダッシュボード' : 'Dashboard'}
-          </Button>
-          <Button variant="ghost" className={navCls('/admin/users')} onClick={() => navigate('/admin/users')}>
-            <Users className="size-4 mr-2" />
-            {language === 'jp' ? 'ユーザー管理' : 'Quản lý người dùng'}
-          </Button>
-          <Button variant="ghost" className={navCls('/admin/cafes')} onClick={() => navigate('/admin/cafes')}>
-            <Store className="size-4 mr-2" />
-            {language === 'jp' ? 'カフェ管理' : 'Quản lý quán'}
-          </Button>
-          <Button variant="ghost" className={navCls('/admin/reports')} onClick={() => navigate('/admin/reports')}>
-            <AlertTriangle className="size-4 mr-2" />
-            {language === 'jp' ? 'レポート管理' : 'Quản lý báo cáo'}
-            {activeReports > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs rounded-full size-5 flex items-center justify-center">
-                {activeReports}
-              </span>
-            )}
-          </Button>
-        </nav>
-
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full" onClick={handleLogout}>
-            {language === 'jp' ? 'ログアウト' : 'Đăng xuất'}
-          </Button>
+        {/* Row 2: type tabs */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-500 shrink-0">
+            {language === 'jp' ? '種類:' : 'Loại đơn:'}
+          </span>
+          {(
+            [
+              { key: 'all',               labelVN: 'Tất cả',         labelJP: 'すべて' },
+              { key: 'review_complaint',   labelVN: 'Đơn kiến nghị', labelJP: 'レビュー申し立て' },
+              { key: 'cafe_delete',        labelVN: 'Xóa quán',      labelJP: 'カフェ削除' },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterType(tab.key)}
+              className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${
+                filterType === tab.key
+                  ? 'bg-amber-700 text-white border-amber-700'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
+              }`}
+            >
+              {language === 'jp' ? tab.labelJP : tab.labelVN}
+              {tab.key !== 'all' && (
+                <span className="ml-1.5 opacity-70">
+                  ({reportsList.filter((r) => r.type === tab.key).length})
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ══ Main Content ══ */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <div className="border-b bg-white px-6 py-4 flex items-center justify-between shrink-0">
-          <h2 className="font-bold text-gray-800">
-            {language === 'jp' ? 'レポート管理' : 'Quản lý báo cáo'}
-          </h2>
-          <div className="flex items-center gap-3">
-            <LanguageToggle />
-            <Button variant="ghost" size="icon"><User className="size-5" /></Button>
-          </div>
-        </div>
+      {/* ── Table ── */}
+      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100 text-gray-600 border-b">
+                <th className="text-center py-3 px-4 w-12">
+                  {language === 'jp' ? '番号' : 'STT'}
+                </th>
+                <th className="text-left py-3 px-4">
+                  {language === 'jp' ? '内容' : 'Nội dung'}
+                </th>
+                <th className="text-center py-3 px-4 whitespace-nowrap">
+                  {language === 'jp' ? '受信日時' : 'Ngày & Giờ nhận'}
+                </th>
+                <th className="text-center py-3 px-4 min-w-[220px]">
+                  {language === 'jp' ? 'アクション' : 'Hành động'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-14 text-gray-400">
+                    <Flag className="size-10 mx-auto mb-2 opacity-30" />
+                    <p>{language === 'jp' ? 'レポートがありません' : 'Không có báo cáo nào'}</p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((report, idx) => {
+                  const { date, time } = fmtDateTime(report.createdAt);
+                  const isNew = report.status === 'active';
+                  return (
+                    <tr
+                      key={report.id}
+                      className={`border-b last:border-b-0 transition-colors ${
+                        isNew ? 'hover:bg-amber-50/40' : 'hover:bg-gray-50/60'
+                      }`}
+                    >
+                      {/* STT */}
+                      <td className="text-center py-4 px-4 text-gray-500">{idx + 1}</td>
 
-        <div className="flex-1 p-6 overflow-auto space-y-5">
+                      {/* Content summary */}
+                      <td className="py-4 px-4 max-w-xs">
+                        <div className="flex flex-wrap gap-1.5 mb-1.5">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeBadgeCls(report.type)}`}>
+                            {typeLabel(report.type)}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeCls(report.status)}`}>
+                            {statusLabel(report.status)}
+                          </span>
+                        </div>
+                        <p className="text-gray-800 line-clamp-2">
+                          {language === 'jp' ? report.titleJP : report.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {language === 'jp' ? report.cafeNameJP : report.cafeName}
+                        </p>
+                      </td>
 
-          {/* ── Filter area ── */}
-          <div className="bg-white rounded-xl border shadow-sm p-5 space-y-4">
+                      {/* Date & Time */}
+                      <td className="py-4 px-4 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="flex items-center gap-1 text-gray-700">
+                            <Calendar className="size-3.5 text-gray-400" />
+                            {date}
+                          </span>
+                          <span className="flex items-center gap-1 text-gray-400 text-xs">
+                            <Clock className="size-3 text-gray-300" />
+                            {time}
+                          </span>
+                        </div>
+                      </td>
 
-            {/* Row 1: date range */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
-                <Calendar className="size-4" />
-                <span>{language === 'jp' ? '期間:' : 'Khoảng thời gian:'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  className="w-40 text-sm"
-                  value={dateFrom}
-                  max={dateTo || undefined}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-                <span className="text-gray-400 text-sm">→</span>
-                <Input
-                  type="date"
-                  className="w-40 text-sm"
-                  value={dateTo}
-                  min={dateFrom || undefined}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-                {(dateFrom || dateTo) && (
-                  <button
-                    className="text-xs text-amber-700 hover:underline"
-                    onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  >
-                    {language === 'jp' ? 'クリア' : 'Xóa'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Row 2: type tabs */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-500 shrink-0">
-                {language === 'jp' ? '種類:' : 'Loại đơn:'}
-              </span>
-              {(
-                [
-                  { key: 'all',               labelVN: 'Tất cả',         labelJP: 'すべて' },
-                  { key: 'review_complaint',   labelVN: 'Đơn kiến nghị', labelJP: 'レビュー申し立て' },
-                  { key: 'cafe_delete',        labelVN: 'Xóa quán',      labelJP: 'カフェ削除' },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilterType(tab.key)}
-                  className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${
-                    filterType === tab.key
-                      ? 'bg-amber-700 text-white border-amber-700'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
-                  }`}
-                >
-                  {language === 'jp' ? tab.labelJP : tab.labelVN}
-                  {tab.key !== 'all' && (
-                    <span className="ml-1.5 opacity-70">
-                      ({reports.filter((r) => r.type === tab.key).length})
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Table ── */}
-          {loadError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
-              {loadError}
-            </div>
-          )}
-          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-600 border-b">
-                    <th className="text-center py-3 px-4 w-12">
-                      {language === 'jp' ? '番号' : 'STT'}
-                    </th>
-                    <th className="text-left py-3 px-4">
-                      {language === 'jp' ? '内容' : 'Nội dung'}
-                    </th>
-                    <th className="text-center py-3 px-4 whitespace-nowrap">
-                      {language === 'jp' ? '受信日時' : 'Ngày & Giờ nhận'}
-                    </th>
-                    <th className="text-center py-3 px-4 min-w-[220px]">
-                      {language === 'jp' ? 'アクション' : 'Hành động'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center py-14 text-gray-400">
-                        <Flag className="size-10 mx-auto mb-2 opacity-30" />
-                        <p>{language === 'jp' ? 'レポートがありません' : 'Không có báo cáo nào'}</p>
+                      {/* Actions */}
+                      <td className="py-4 px-4 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-500"
+                          onClick={() => { setSelectedReport(report); setDetailOpen(true); }}
+                        >
+                          <Eye className="size-3.5 mr-1" />
+                          {language === 'jp' ? '詳細' : 'Xem chi tiết'}
+                        </Button>
                       </td>
                     </tr>
-                  ) : (
-                    filtered.map((report, idx) => {
-                      const { date, time } = fmtDateTime(report.createdAt);
-                      const isNew = report.status === 'active';
-                      return (
-                        <tr
-                          key={report.id}
-                          className={`border-b last:border-b-0 transition-colors ${
-                            isNew ? 'hover:bg-amber-50/40' : 'hover:bg-gray-50/60'
-                          }`}
-                        >
-                          {/* STT */}
-                          <td className="text-center py-4 px-4 text-gray-500">{idx + 1}</td>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                          {/* Content summary */}
-                          <td className="py-4 px-4 max-w-xs">
-                            <div className="flex flex-wrap gap-1.5 mb-1.5">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeBadgeCls(report.type)}`}>
-                                {typeLabel(report.type)}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeCls(report.status)}`}>
-                                {statusLabel(report.status)}
-                              </span>
-                            </div>
-                            <p className="text-gray-800 line-clamp-2">
-                              {language === 'jp' ? report.titleJP : report.title}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {language === 'jp' ? report.cafeNameJP : report.cafeName}
-                            </p>
-                          </td>
-
-                          {/* Date & Time */}
-                          <td className="py-4 px-4 text-center">
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className="flex items-center gap-1 text-gray-700">
-                                <Calendar className="size-3.5 text-gray-400" />
-                                {date}
-                              </span>
-                              <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                <Clock className="size-3 text-gray-300" />
-                                {time}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-4 px-4">
-                            <div className="flex items-center justify-center gap-2 flex-wrap">
-                              {/* Xem chi tiết — always shown */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-500"
-                                onClick={() => { setSelectedReport(report); setDetailOpen(true); }}
-                              >
-                                <Eye className="size-3.5 mr-1" />
-                                {language === 'jp' ? '詳細' : 'Xem chi tiết'}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer count */}
-            <div className="px-5 py-3 border-t bg-gray-50/60 text-sm text-gray-500 flex items-center justify-between">
-              <span>
+        {/* Footer count */}
+        <div className="px-5 py-3 border-t bg-gray-50/60 text-sm text-gray-500 flex items-center justify-between">
+          <span>
+            {language === 'jp'
+              ? `総レポート数：${filtered.length}`
+              : `Tổng số báo cáo: ${filtered.length}`}
+            {filtered.length !== reportsList.length && (
+              <span className="ml-2 text-gray-400">
                 {language === 'jp'
-                  ? `総レポート数：${filtered.length}`
-                  : `Tổng số báo cáo: ${filtered.length}`}
-                {filtered.length !== reports.length && (
-                  <span className="ml-2 text-gray-400">
-                    {language === 'jp'
-                      ? `（全${reports.length}件中）`
-                      : `(trong tổng ${reports.length})`}
-                  </span>
-                )}
+                  ? `（全${reportsList.length}件中）`
+                  : `(trong tổng ${reportsList.length})`}
               </span>
-              <span className="text-orange-600 font-medium">
-                {activeReports} {language === 'jp' ? '件未処理' : 'chờ xử lý'}
-              </span>
-            </div>
-          </div>
+            )}
+          </span>
+          <span className="text-orange-600 font-medium">
+            {activeReportsCount} {language === 'jp' ? '件未処理' : 'chờ xử lý'}
+          </span>
         </div>
       </div>
 

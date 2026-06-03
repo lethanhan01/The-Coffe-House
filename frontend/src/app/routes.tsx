@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import AdminCafeManagementPage from './pages/AdminCafeManagementPage';
 import AdminReportsPage from './pages/AdminReportsPage';
+import AdminLayout from './pages/AdminLayout';
 import StaffHomePage from './pages/StaffHomePage';
 import StaffCafeDetailPage from './pages/StaffCafeDetailPage';
 import StaffProfilePage from './pages/StaffProfilePage';
@@ -66,18 +67,24 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminDashboard />,
-  },
-  {
-    path: '/admin/users',
-    element: <AdminUserManagementPage />,
-  },
-  {
-    path: '/admin/cafes',
-    element: <AdminCafeManagementPage />,
-  },
-  {
-    path: '/admin/reports',
-    element: <AdminReportsPage />,
+    element: <AdminLayout />,
+    children: [
+      {
+        path: '',
+        element: <AdminDashboard />,
+      },
+      {
+        path: 'users',
+        element: <AdminUserManagementPage />,
+      },
+      {
+        path: 'cafes',
+        element: <AdminCafeManagementPage />,
+      },
+      {
+        path: 'reports',
+        element: <AdminReportsPage />,
+      },
+    ],
   },
 ]);
