@@ -20,7 +20,7 @@ export const register = async (userData: any) => {
     if (checkError) {
         throw new Error(checkError.message);
     }
-    
+
     if (existingUser) {
         throw new Error('Email already in use');
     }
@@ -32,11 +32,11 @@ export const register = async (userData: any) => {
     // Insert new user
     const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert([{ 
-            email, 
-            password_hash, 
-            full_name, 
-            role_id 
+        .insert([{
+            email,
+            password_hash,
+            full_name,
+            role_id
         }])
         .select('id, email, full_name, role_id, avatar_url')
         .single();
@@ -94,7 +94,7 @@ export const login = async (loginData: any) => {
 export const getCurrentUser = async (userId: number) => {
     const { data: user, error } = await supabase
         .from('users')
-        .select('id, email, full_name, role_id, avatar_url')
+        .select('id, email, full_name, role_id, avatar_url, phone_number')
         .eq('id', userId)
         .maybeSingle();
 
@@ -103,4 +103,34 @@ export const getCurrentUser = async (userId: number) => {
     }
 
     return user;
+};
+
+export const updateUser = async (userId: number, updateData: any) => {
+    const { full_name, phone_number, email } = updateData;
+
+    const { data: updatedUser, error } = await supabase
+        .from('users')
+        .update({ full_name, phone_number, email })
+        .eq('id', userId)
+        .select('id, email, full_name, role_id, avatar_url, phone_number')
+        .single();
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return updatedUser;
+};
+
+export const deleteUser = async (userId: number) => {
+    const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return true;
 };

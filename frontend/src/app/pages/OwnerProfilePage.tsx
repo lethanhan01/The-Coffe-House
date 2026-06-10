@@ -11,7 +11,7 @@ export default function OwnerProfilePage() {
   const { user, updateUser, deleteAccount, logout } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
-  
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -30,10 +30,10 @@ export default function OwnerProfilePage() {
   };
 
   const handleDeleteAccount = () => {
-    const confirmMessage = language === 'jp' 
+    const confirmMessage = language === 'jp'
       ? 'アカウントを削除してもよろしいですか？この操作は元に戻せません。'
       : 'Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.';
-    
+
     if (confirm(confirmMessage)) {
       deleteAccount();
       navigate('/login');

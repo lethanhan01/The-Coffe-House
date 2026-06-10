@@ -19,7 +19,7 @@ describe("Integration Test - Auth API", () => {
 
   test("POST /api/auth/register - Register a new user", async () => {
     const res = await request(app).post("/api/auth/register").send(testUser);
-    if(res.status !== 201) console.log(res.body);
+    if (res.status !== 201) console.log(res.body);
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("message", "User registered successfully");
     expect(res.body.user).toHaveProperty("id");
@@ -28,7 +28,7 @@ describe("Integration Test - Auth API", () => {
 
   test("POST /api/auth/register - Duplicate email should fail", async () => {
     const res = await request(app).post("/api/auth/register").send(testUser);
-    
+
     expect(res.status).toBe(409);
     expect(res.body).toHaveProperty("error", "Email already in use");
   });
@@ -38,7 +38,7 @@ describe("Integration Test - Auth API", () => {
       email: testUser.email,
       password: testUser.password
     });
-    
+
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("token");
     expect(res.body).toHaveProperty("user");
@@ -53,7 +53,7 @@ describe("Integration Test - Auth API", () => {
       email: testUser.email,
       password: "wrongpassword"
     });
-    
+
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty("error", "Invalid email or password");
   });
@@ -62,14 +62,14 @@ describe("Integration Test - Auth API", () => {
     const res = await request(app)
       .get("/api/auth/me")
       .set("Authorization", `Bearer ${token}`);
-    
+
     expect(res.status).toBe(200);
     expect(res.body.email).toBe(testUser.email);
   });
 
   test("GET /api/auth/me - Get current profile without token should fail", async () => {
     const res = await request(app).get("/api/auth/me");
-    
+
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty("error", "Access denied. No token provided.");
   });

@@ -28,7 +28,7 @@ const translations: Translations = {
   resetPassword: { jp: 'パスワードをリセット', vn: 'Đặt lại mật khẩu' },
   submit: { jp: '送信', vn: 'Gửi' },
   cancel: { jp: 'キャンセル', vn: 'Hủy' },
-  
+
   // Register
   fullName: { jp: '氏名', vn: 'Họ tên' },
   selectRole: { jp: '役割を選択', vn: 'Chọn vai trò' },
@@ -36,14 +36,14 @@ const translations: Translations = {
   iAmOwner: { jp: '私は店主です', vn: 'Tôi là chủ quán' },
   noAccount: { jp: 'アカウントをお持ちでないですか？', vn: 'Chưa có tài khoản?' },
   haveAccount: { jp: 'アカウントをお持ちですか？', vn: 'Đã có tài khoản?' },
-  
+
   // Home
   search: { jp: '検索', vn: 'Tìm kiếm' },
   filter: { jp: 'フィルター', vn: 'Lọc' },
   promotions: { jp: '本日の特典', vn: 'Ưu đãi hôm nay' },
   cafes: { jp: '周辺のカフェ', vn: 'Quán cafe quanh bạn' },
   location: { jp: 'あなたの位置', vn: 'Vị trí của bạn' },
-  
+
   // Cafe Detail
   cafeDetails: { jp: 'カフェ詳細', vn: 'Chi tiết quán' },
   address: { jp: '住所', vn: 'Địa chỉ' },
@@ -61,7 +61,7 @@ const translations: Translations = {
   reviews: { jp: 'レビュー', vn: 'Đánh giá' },
   writeReview: { jp: 'レビューを書く', vn: 'Viết đánh giá' },
   promotion: { jp: '特典', vn: 'Ưu đãi' },
-  
+
   // Amenities
   hasWifi: { jp: 'WiFiあり', vn: 'Có WiFi' },
   hasAC: { jp: 'エアコンあり', vn: 'Có điều hòa' },
@@ -69,19 +69,19 @@ const translations: Translations = {
   noSmoking: { jp: '禁煙', vn: 'Cấm thuốc lá' },
   hasSnacks: { jp: '軽食あり', vn: 'Có đồ ăn nhẹ' },
   hasCoffee: { jp: 'ハイテーブルあり', vn: 'Có bàn cao' },
-  
+
   // Booking
   selectDate: { jp: '日付を選択', vn: 'Chọn ngày' },
   selectTime: { jp: '時間を選択', vn: 'Chọn giờ' },
   numberOfPeople: { jp: '人数', vn: 'Số người' },
   bookingSummary: { jp: '予約概要', vn: 'Tóm tắt đặt chỗ' },
   confirm: { jp: '確認', vn: 'Xác nhận' },
-  
+
   // Review
   yourRating: { jp: 'あなたの評価', vn: 'Đánh giá của bạn' },
   comment: { jp: 'コメント', vn: 'Nhận xét' },
   uploadPhoto: { jp: '写真をアップロード', vn: 'Tải ảnh lên' },
-  
+
   // Profile
   profile: { jp: 'プロフィール', vn: 'Hồ sơ' },
   role: { jp: '役割', vn: 'Vai trò' },
@@ -92,18 +92,18 @@ const translations: Translations = {
   '4': { jp: 'スタッフ', vn: 'Nhân viên' },
   saveChanges: { jp: '変更を保存', vn: 'Lưu thay đổi' },
   deleteAccount: { jp: 'アカウントを削除', vn: 'Xóa tài khoản' },
-  
+
   // Notifications
   notifications: { jp: '通知', vn: 'Thông báo' },
   noNotifications: { jp: '通知はありません', vn: 'Không có thông báo' },
   bookingConfirmed: { jp: '予約が確認されました', vn: 'Đặt chỗ đã được xác nhận' },
   bookingRejected: { jp: '予約が拒否されました', vn: 'Đặt chỗ bị từ chối' },
   reviewDeleted: { jp: 'レビューが削除されました', vn: 'Đánh giá đã bị xóa' },
-  
+
   // Filter
   applyFilter: { jp: 'フィルターを適用', vn: 'Áp dụng lọc' },
   clearFilter: { jp: 'フィルターをクリア', vn: 'Xóa bộ lọc' },
-  
+
   // Common
   back: { jp: '戻る', vn: 'Quay lại' },
   save: { jp: '保存', vn: 'Lưu' },

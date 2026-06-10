@@ -121,15 +121,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
   };
 
-  const updateUser = (data: Partial<User>) => {
-    // This is a stub for now. Need to call PUT /api/auth/me if we implement it on backend
+  const updateUser = async (data: Partial<User>) => {
     if (!user) return;
-    setUser({ ...user, ...data });
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const payload = {
+        full_name: data.name,
+        phone_number: data.phone,
+        email: data.email
+      };
+
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        setUser(formatUser(updatedData));
+      } else {
+        console.error('Failed to update user');
+      }
+    } catch (error) {
+      console.error('Update user error:', error);
+    }
   };
 
-  const deleteAccount = () => {
-    // Stub
-    logout();
+  const deleteAccount = async () => {
+    if (!user) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        logout();
+      } else {
+        console.error('Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+    }
   };
 
   return (

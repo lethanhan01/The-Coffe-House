@@ -10,5 +10,7 @@ router.post('/login', authController.login);
 
 // Protected routes
 router.get('/me', authenticateToken, authController.getProfile);
+router.put('/me', authenticateToken, authController.updateProfile);
+router.delete('/me', authenticateToken, authController.deleteProfile);
 
 export default router;

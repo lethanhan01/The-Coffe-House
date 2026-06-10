@@ -17,7 +17,7 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const { user, updateUser, deleteAccount, logout } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  
+
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
