@@ -39,6 +39,7 @@ export default function RegisterPage() {
       name,
       role: parseInt(role) as 1 | 2 | 3 | 4,
       password,
+      language,
     } as any);
 
     if (!success) {

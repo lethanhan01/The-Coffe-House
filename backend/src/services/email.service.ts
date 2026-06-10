@@ -364,7 +364,7 @@ export const sendBookingStatusUpdateEmailToCustomer = async (
                         <h1>☕ ザ・コーヒーハウス</h1>
                     </div>
                     <div class="content">
-                        <p>Xin chào <strong>${userName}</strong>,</p>
+                        <p><strong>${userName}</strong>様へ、</p>
                         <div class="status-message ${isAccepted ? 'accepted' : 'rejected'}">
                             ${isAccepted ? '✓ ご予約が承認されました！' : '✗ ご予約が拒否されました。'}
                         </div>

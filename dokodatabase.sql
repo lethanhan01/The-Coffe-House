@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, 
     avatar_url TEXT, 
-    role_id INT NOT NULL CHECK (role_id IN (1, 2, 3, 4)) 
+    role_id INT NOT NULL CHECK (role_id IN (1, 2, 3, 4)),
+    language VARCHAR(10) NOT NULL DEFAULT 'vn'
 );
 
 CREATE TABLE IF NOT EXISTS cafes (
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_date DATE NOT NULL,
     booking_time TIME NOT NULL,
     number_of_people INT NOT NULL CHECK (number_of_people > 0),
+    language VARCHAR(10) NOT NULL DEFAULT 'vi',
     status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'confirmed', 'rejected')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -177,6 +179,7 @@ CREATE TABLE bookings (
     booking_date DATE NOT NULL,
     booking_time TIME NOT NULL,
     number_of_people INT NOT NULL CHECK (number_of_people >= 1), 
+    language VARCHAR(10) NOT NULL DEFAULT 'vi',
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')), 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -217,6 +220,8 @@ ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 -- Bổ sung cột thời gian để theo dõi việc cập nhật thông tin cá nhân.
 ALTER TABLE users
 ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS language VARCHAR(10) NOT NULL DEFAULT 'vn';
 ALTER TABLE reviews DISABLE ROW LEVEL SECURITY;
 ALTER TABLE review_images DISABLE ROW LEVEL SECURITY;
 -- Reset average_rating dựa trên data thực trong bảng reviews

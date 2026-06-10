@@ -6,6 +6,7 @@ export interface BookingData {
   booking_date: string;
   booking_time: string;
   number_of_people: number;
+  language?: 'vn' | 'jp';
 }
 
 export interface Booking extends BookingData {

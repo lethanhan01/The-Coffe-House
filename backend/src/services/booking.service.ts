@@ -3,6 +3,7 @@ import supabase from '../utils/db';
 // 1. CREATE: Tạo booking mới
 export const createBooking = async (data: any) => {
     const { user_id, cafe_id, booking_date, booking_time, number_of_people } = data;
+    const bookingLanguage = data.language === 'jp' ? 'jp' : 'vi';
 
     // Kiểm tra thông tin bắt buộc
     if (!user_id || !cafe_id || !booking_date || !booking_time || !number_of_people) {
@@ -17,7 +18,8 @@ export const createBooking = async (data: any) => {
             booking_date,
             booking_time,
             number_of_people,
-            status: 'pending'
+            status: 'pending',
+            language: bookingLanguage
         }])
         .select('*')
         .single();

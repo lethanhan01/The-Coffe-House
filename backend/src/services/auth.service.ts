@@ -8,7 +8,7 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || 'dokocafe-secret-key-default';
 
 export const register = async (userData: any) => {
-    const { email, password, full_name, role_id = 1 } = userData;
+    const { email, password, full_name, role_id = 1, language = 'vn' } = userData;
 
     // Check if user already exists
     const { data: existingUser, error: checkError } = await supabase
@@ -32,13 +32,14 @@ export const register = async (userData: any) => {
     // Insert new user
     const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert([{
-            email,
-            password_hash,
-            full_name,
-            role_id
+        .insert([{ 
+            email, 
+            password_hash, 
+            full_name, 
+            role_id,
+            language
         }])
-        .select('id, email, full_name, role_id, avatar_url')
+        .select('id, email, full_name, role_id, avatar_url, language')
         .single();
 
     if (insertError) {
@@ -94,7 +95,7 @@ export const login = async (loginData: any) => {
 export const getCurrentUser = async (userId: number) => {
     const { data: user, error } = await supabase
         .from('users')
-        .select('id, email, full_name, role_id, avatar_url, phone_number')
+        .select('id, email, full_name, role_id, avatar_url, phone_number, language')
         .eq('id', userId)
         .maybeSingle();
 

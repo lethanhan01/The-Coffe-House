@@ -52,7 +52,8 @@ export default function BookingDialog({ open, onClose, cafe, onSuccess }: Bookin
         cafe_id: cafe.id,
         booking_date: bookingDate,
         booking_time: time,
-        number_of_people: numberOfPeople
+        number_of_people: numberOfPeople,
+        language: language
       });
 
       if (!result) {

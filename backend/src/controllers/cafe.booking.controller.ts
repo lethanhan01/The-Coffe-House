@@ -17,15 +17,22 @@ export const createBooking = async (req: Request, res: Response) => {
             });
         }
 
-        const newBooking = await bookingService.createBooking(bookingData);
-        
-        // Fetch user details for email
+        // Fetch user details to determine language and send email
         const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('email, full_name')
-            .eq('id', newBooking.user_id)
+            .select('email, full_name, language')
+            .eq('id', bookingData.user_id)
             .single();
 
+        if (userError || !userData) {
+            throw new Error(userError?.message || 'Không tìm thấy người dùng để gửi email');
+        }
+
+        const preferredLanguage = (userData.language || 'vi').toString().toLowerCase();
+        const language = preferredLanguage === 'jp' ? 'jp' : 'vi';
+
+        const newBooking = await bookingService.createBooking({ ...bookingData, language });
+        
         // Fetch cafe details for email
         const { data: cafeData, error: cafeError } = await supabase
             .from('cafes')
@@ -35,10 +42,8 @@ export const createBooking = async (req: Request, res: Response) => {
 
         // Send confirmation email if both user and cafe data are available
         if (userData && cafeData) {
-            const cafeName = userData.full_name?.includes('日本') || userData.full_name?.includes('にほ') 
-                ? cafeData.name_jp 
-                : cafeData.name_vn;
-            
+            const cafeName = language === 'jp' ? cafeData.name_jp : cafeData.name_vn;
+
             await emailService.sendBookingConfirmationEmail(
                 userData.email,
                 userData.full_name,
@@ -49,7 +54,7 @@ export const createBooking = async (req: Request, res: Response) => {
                 cafeData.address,
                 cafeData.phone_number,
                 newBooking.id,
-                'vi' // Default to Vietnamese, can be enhanced to detect user preference
+                language
             );
         }
 
@@ -180,14 +185,19 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
         if (status === 'confirmed' || status === 'approved' || status === 'rejected') {
             const { data: bookingData, error: bookingDataError } = await supabase
                 .from('bookings')
-                .select('*, users(email, full_name), cafes(name_vn, name_jp, address, phone_number)')
+                .select('*, users(email, full_name, language), cafes(name_vn, name_jp, address, phone_number)')
                 .eq('id', bookingId)
                 .single();
 
             if (bookingDataError) {
                 console.warn('Không lấy được thông tin booking để gửi email:', bookingDataError.message);
             } else if (bookingData && bookingData.users) {
-                const cafeName = bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
+                const preferredLanguage = (bookingData.users.language || 'vi').toString().toLowerCase();
+                const language = preferredLanguage === 'jp' ? 'jp' : 'vi';
+                const cafeName = language === 'jp'
+                    ? bookingData.cafes?.name_jp || bookingData.cafes?.name_vn || 'Quán Cafe'
+                    : bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
+
                 await emailService.sendBookingStatusUpdateEmailToCustomer(
                     bookingData.users.email,
                     bookingData.users.full_name,
@@ -197,7 +207,7 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
                     bookingData.number_of_people,
                     status,
                     bookingId,
-                    'vi'
+                    language
                 );
             }
         }
@@ -231,7 +241,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
         // Get booking details before canceling
         const { data: bookingData, error: bookingError } = await supabase
             .from('bookings')
-            .select('*, users(email, full_name), cafes(name_vn)')
+            .select('*, users(email, full_name, language), cafes(name_vn, name_jp)')
             .eq('id', bookingId)
             .single();
 
@@ -239,12 +249,18 @@ export const cancelBooking = async (req: Request, res: Response) => {
 
         // Send cancellation email if booking data available
         if (bookingData && bookingData.users) {
+            const preferredLanguage = (bookingData.users.language || 'vi').toString().toLowerCase();
+            const language = preferredLanguage === 'jp' ? 'jp' : 'vi';
+            const cafeName = language === 'jp'
+                ? bookingData.cafes?.name_jp || bookingData.cafes?.name_vn || 'Quán Cafe'
+                : bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
+
             await emailService.sendBookingCancellationEmail(
                 bookingData.users.email,
                 bookingData.users.full_name,
-                bookingData.cafes?.name_vn || 'Quán Cafe',
+                cafeName,
                 bookingId,
-                'vi'
+                language
             );
         }
         

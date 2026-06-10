@@ -7,13 +7,14 @@ export interface User {
   role: 1 | 2 | 3 | 4; // 1: Customer, 2: Owner, 3: Admin, 4: Staff
   avatar?: string;
   phone?: string;
+  language?: 'vn' | 'jp';
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
-  register: (data: Omit<User, 'id'> & { password?: string }) => Promise<boolean>;
+  register: (data: Omit<User, 'id'> & { password?: string; language?: 'vn' | 'jp' }) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   deleteAccount: () => void;
@@ -34,7 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name: data.full_name,
     role: data.role_id,
     avatar: data.avatar_url,
-    phone: data.phone_number
+    phone: data.phone_number,
+    language: data.language || 'vn'
   });
 
   useEffect(() => {
@@ -90,14 +92,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (data: Omit<User, 'id'> & { password?: string }): Promise<boolean> => {
+  const register = async (data: Omit<User, 'id'> & { password?: string; language?: 'vn' | 'jp' }): Promise<boolean> => {
     try {
       const payload = {
         email: data.email,
         password: data.password,
         full_name: data.name,
         role_id: data.role,
-        phone_number: data.phone
+        phone_number: data.phone,
+        language: data.language || 'vn'
       };
 
       const response = await fetch(`${API_URL}/auth/register`, {
