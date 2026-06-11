@@ -14,7 +14,7 @@ import NotificationsDialog from '../components/NotificationsDialog';
 import BookingDialog from '../components/BookingDialog';
 import ReviewDialog from '../components/ReviewDialog';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
 
 const toBoolean = (value: boolean | number | null | undefined) => value === true || value === 1;
@@ -77,7 +77,7 @@ export default function CafeDetailPage() {
     const fetchCafe = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/cafes/${id}`);
+        const response = await fetch(`${API_BASE_URL}/cafes/${id}`);
         if (!response.ok) throw new Error('Not found');
         const result = await response.json();
         setCafe(mapBackendCafe(result.data));
@@ -92,7 +92,7 @@ export default function CafeDetailPage() {
 
     const fetchOtherCafes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/cafes`);
+        const response = await fetch(`${API_BASE_URL}/cafes`);
         if (!response.ok) throw new Error('Failed');
         const result = await response.json();
         const others = (result.data || [])
@@ -114,7 +114,7 @@ export default function CafeDetailPage() {
   const fetchReviews = async () => {
     if (!id) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reviews?cafe_id=${id}`);
+      const response = await fetch(`${API_BASE_URL}/reviews?cafe_id=${id}`);
       if (!response.ok) throw new Error('Failed to load reviews');
       const result = await response.json();
       setReviews(result.data || []);

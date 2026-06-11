@@ -16,7 +16,7 @@ import ProfileDialog from '../components/ProfileDialog';
 import NotificationsDialog from '../components/NotificationsDialog';
 import MapView from '../components/MapView';
 import { getActivePromotions, type Promotion, formatPromotionDate } from '../services/promotionService';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const DEFAULT_CAFE_IMAGE = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24';
 
 type BackendCafe = {
@@ -156,7 +156,7 @@ export default function HomePage() {
 
     try {
       if (keyword.length > 0 || filterValue.hasWifi || filterValue.hasAC || filterValue.hasOutlet || filterValue.noSmoking || filterValue.hasSnacks || filterValue.isOpen) {
-        const response = await fetch(`${API_BASE_URL}/api/cafes/search?${params.toString()}`);
+        const response = await fetch(`${API_BASE_URL}/cafes/search?${params.toString()}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch cafes');
@@ -186,7 +186,7 @@ export default function HomePage() {
           try {
 
             const response = await fetch(
-              `${API_BASE_URL}/api/search/nearby?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`
+              `${API_BASE_URL}/search/nearby?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`
             );
 
             if (!response.ok) {
