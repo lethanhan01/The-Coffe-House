@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL as string;
 
 // Helper function to format date safely
 export const formatPromotionDate = (dateString: string, language: 'jp' | 'vn' = 'vn'): string => {
