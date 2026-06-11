@@ -11,7 +11,11 @@ import adminRoutes from './routes/admin.routes';
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json()); // Để đọc được dữ liệu JSON từ body (req.body)
 app.use(express.urlencoded({ extended: true })); // Support form data
 
