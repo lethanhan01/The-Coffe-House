@@ -1,4 +1,6 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { type ReactNode } from 'react';
+import { useAuth, type User } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
@@ -16,6 +18,20 @@ import StaffHomePage from './pages/StaffHomePage';
 import StaffCafeDetailPage from './pages/StaffCafeDetailPage';
 import StaffProfilePage from './pages/StaffProfilePage';
 
+function ProtectedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: ReactNode;
+  allowedRoles: User['role'][];
+}) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -31,43 +47,43 @@ export const router = createBrowserRouter([
   },
   {
     path: '/home',
-    element: <HomePage />,
+    element: <ProtectedRoute allowedRoles={[1]}><HomePage /></ProtectedRoute>,
   },
   {
     path: '/cafe/:id',
-    element: <CafeDetailPage />,
+    element: <ProtectedRoute allowedRoles={[1]}><CafeDetailPage /></ProtectedRoute>,
   },
   {
     path: '/cafe-setup',
-    element: <CafeSetupPage />,
+    element: <ProtectedRoute allowedRoles={[2]}><CafeSetupPage /></ProtectedRoute>,
   },
   {
     path: '/owner',
-    element: <OwnerHomePage />,
+    element: <ProtectedRoute allowedRoles={[2]}><OwnerHomePage /></ProtectedRoute>,
   },
   {
     path: '/owner/cafe/:id',
-    element: <OwnerCafeDetailPage />,
+    element: <ProtectedRoute allowedRoles={[2]}><OwnerCafeDetailPage /></ProtectedRoute>,
   },
   {
     path: '/owner/profile',
-    element: <OwnerProfilePage />,
+    element: <ProtectedRoute allowedRoles={[2]}><OwnerProfilePage /></ProtectedRoute>,
   },
   {
     path: '/staff',
-    element: <StaffHomePage />,
+    element: <ProtectedRoute allowedRoles={[4]}><StaffHomePage /></ProtectedRoute>,
   },
   {
     path: '/staff/cafe/:id',
-    element: <StaffCafeDetailPage />,
+    element: <ProtectedRoute allowedRoles={[4]}><StaffCafeDetailPage /></ProtectedRoute>,
   },
   {
     path: '/staff/profile',
-    element: <StaffProfilePage />,
+    element: <ProtectedRoute allowedRoles={[4]}><StaffProfilePage /></ProtectedRoute>,
   },
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: <ProtectedRoute allowedRoles={[3]}><AdminLayout /></ProtectedRoute>,
     children: [
       {
         path: '',

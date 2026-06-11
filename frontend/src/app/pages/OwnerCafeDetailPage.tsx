@@ -64,7 +64,7 @@ export default function OwnerCafeDetailPage() {
       //     return;
       //   }
       // }
-      if (foundCafe.owner_id !== user?.id) {
+      if (String(foundCafe.owner_id) !== user?.id) {
         navigate('/owner');
         return;
       }

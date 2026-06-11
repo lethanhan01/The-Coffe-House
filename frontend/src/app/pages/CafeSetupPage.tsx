@@ -40,7 +40,7 @@ export default function CafeSetupPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || user.role !== 'owner') {
+    if (!user || user.role !== 2) {
       navigate('/login');
       return;
     }
