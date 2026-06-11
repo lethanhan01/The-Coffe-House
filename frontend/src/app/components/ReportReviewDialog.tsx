@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertTriangle } from 'lucide-react';
 
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL as string;
 interface ReportReviewDialogProps {
   open: boolean;
   onClose: () => void;
@@ -84,7 +84,7 @@ export function ReportReviewDialog({
       created_at: report.createdAt,
     }
     // Send report to backend
-    const response = await fetch(`${BACKEND_URL}/api/reviews/report`, {
+    const response = await fetch(`${BACKEND_URL}/reviews/report`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
