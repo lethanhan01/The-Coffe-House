@@ -28,64 +28,118 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    const loggedInUser = await login(email, password);
-    if (loggedInUser) {
-      if (loggedInUser.role === 1) {
-        setLanguage('jp');
-        navigate('/home');
-      } else if (loggedInUser.role === 2) {
-        setLanguage('vn');
-        navigate('/owner');
-      } else if (loggedInUser.role === 3) {
-        setLanguage('vn');
-        navigate('/admin');
-      } else if (loggedInUser.role === 4) {
-        setLanguage('vn');
-        navigate('/staff');
+    try {
+      const loggedInUser = await login(email, password);
+      if (loggedInUser) {
+        if (loggedInUser.role === 1) {
+          setLanguage('jp');
+          navigate('/home');
+        } else if (loggedInUser.role === 2) {
+          setLanguage('vn');
+          navigate('/owner');
+        } else if (loggedInUser.role === 3) {
+          setLanguage('vn');
+          navigate('/admin');
+        } else if (loggedInUser.role === 4) {
+          setLanguage('vn');
+          navigate('/staff');
+        }
       }
-    } else {
-      setError(language === 'jp' ? 'メールまたはパスワードが正しくありません' : 'Email hoặc mật khẩu không đúng');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (language === 'jp' ? 'ログインに失敗しました' : 'Đăng nhập thất bại'));
     }
   };
 
-  const handleSendOTP = () => {
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
+  const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+
+  const handleSendOTP = async () => {
     if (!phone) {
-      setError('Please enter phone number');
+      setError(language === 'jp' ? '電話番号を入力してください' : 'Vui lòng nhập số điện thoại');
       return;
     }
-    // Mock OTP send
-    setForgotPasswordStep('otp');
+    setIsOtpLoading(true);
     setError('');
-  };
-
-  const handleVerifyOTP = () => {
-    // Mock OTP verification (accept any 6-digit code)
-    if (otp.length === 6) {
-      setForgotPasswordStep('newPassword');
-      setError('');
-    } else {
-      setError('Invalid OTP code');
+    try {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      if (response.ok) {
+        setForgotPasswordStep('otp');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || (language === 'jp' ? 'OTPの送信に失敗しました' : 'Gửi OTP thất bại'));
+      }
+    } catch {
+      setError(language === 'jp' ? 'ネットワークエラーが発生しました' : 'Lỗi kết nối mạng');
+    } finally {
+      setIsOtpLoading(false);
     }
   };
 
-  const handleResetPassword = () => {
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6) {
+      setError(language === 'jp' ? '6桁のOTPを入力してください' : 'Vui lòng nhập đủ 6 chữ số OTP');
+      return;
+    }
+    setIsOtpLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp })
+      });
+      if (response.ok) {
+        setForgotPasswordStep('newPassword');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || (language === 'jp' ? 'OTPが正しくありません' : 'Mã OTP không đúng'));
+      }
+    } catch {
+      setError(language === 'jp' ? 'ネットワークエラーが発生しました' : 'Lỗi kết nối mạng');
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(language === 'jp' ? 'パスワードが一致しません' : 'Mật khẩu xác nhận không khớp');
       return;
     }
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(language === 'jp' ? 'パスワードは6文字以上にしてください' : 'Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
-    // Mock password reset
-    setShowForgotPassword(false);
-    setForgotPasswordStep('phone');
-    setPhone('');
-    setOtp('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setIsOtpLoading(true);
     setError('');
-    alert('Password reset successfully!');
+    try {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp, newPassword })
+      });
+      if (response.ok) {
+        setShowForgotPassword(false);
+        setForgotPasswordStep('phone');
+        setPhone('');
+        setOtp('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setError('');
+        alert(language === 'jp' ? 'パスワードを再設定しました。ログインしてください。' : 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập.');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || (language === 'jp' ? 'パスワードの再設定に失敗しました' : 'Đặt lại mật khẩu thất bại'));
+      }
+    } catch {
+      setError(language === 'jp' ? 'ネットワークエラーが発生しました' : 'Lỗi kết nối mạng');
+    } finally {
+      setIsOtpLoading(false);
+    }
   };
 
   const closeForgotPassword = () => {
@@ -189,8 +243,8 @@ export default function LoginPage() {
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button onClick={handleSendOTP} className="w-full">
-                  {t('sendOTP')}
+                <Button onClick={handleSendOTP} className="w-full" disabled={isOtpLoading}>
+                  {isOtpLoading ? '...' : t('sendOTP')}
                 </Button>
               </>
             )}
@@ -213,8 +267,8 @@ export default function LoginPage() {
                   </div>
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button onClick={handleVerifyOTP} className="w-full">
-                  {t('verifyOTP')}
+                <Button onClick={handleVerifyOTP} className="w-full" disabled={isOtpLoading}>
+                  {isOtpLoading ? '...' : t('verifyOTP')}
                 </Button>
               </>
             )}
@@ -242,8 +296,8 @@ export default function LoginPage() {
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button onClick={handleResetPassword} className="w-full">
-                  {t('submit')}
+                <Button onClick={handleResetPassword} className="w-full" disabled={isOtpLoading}>
+                  {isOtpLoading ? '...' : t('submit')}
                 </Button>
               </>
             )}

@@ -32,7 +32,7 @@ export default function OwnerHomePage() {
       // const cafeOwnersJson = localStorage.getItem('cafeOwners');
       if (cafe.owner_id) {
         // const cafeOwners = JSON.parse(cafeOwnersJson);
-        return cafe.owner_id === user?.id;
+        return String(cafe.owner_id) === user?.id;
       }
       return false;
     });

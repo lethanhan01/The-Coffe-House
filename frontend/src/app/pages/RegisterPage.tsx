@@ -34,22 +34,20 @@ export default function RegisterPage() {
       return;
     }
 
-    const success = await register({
-      email,
-      name,
-      role: parseInt(role) as 1 | 2 | 3 | 4,
-      password,
-      language,
-    } as any);
+    try {
+      await register({
+        email,
+        name,
+        role: parseInt(role) as 1 | 2 | 3 | 4,
+        password,
+        language,
+      } as any);
 
-    if (!success) {
-      setError(language === 'jp' ? '登録に失敗しました。メールが既に使用されている可能性があります。' : 'Đăng ký thất bại. Email có thể đã được sử dụng.');
-      return;
+      alert(language === 'jp' ? '登録成功しました。ログインしてください。' : 'Đăng ký thành công. Vui lòng đăng nhập.');
+      navigate('/login');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (language === 'jp' ? '登録に失敗しました' : 'Đăng ký thất bại'));
     }
-
-    // Redirect to login page for all roles after registration
-    alert(language === 'jp' ? '登録成功しました。ログインしてください。' : 'Đăng ký thành công. Vui lòng đăng nhập.');
-    navigate('/login');
   };
 
   return (

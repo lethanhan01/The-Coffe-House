@@ -54,7 +54,7 @@ export function TopBar({ onNotificationClick, onProfileClick, showBackButton }: 
         <div className="flex items-center gap-4">
           <LanguageToggle />
           
-          {user?.role === 'customer' && (
+          {user?.role === 1 && (
             <Button
               variant="ghost"
               size="icon"
