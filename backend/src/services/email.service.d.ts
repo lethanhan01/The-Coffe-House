@@ -1,0 +1,5 @@
+export declare const sendBookingConfirmationEmail: (userEmail: string, userName: string, cafeName: string, bookingDate: string, bookingTime: string, numberOfPeople: number, address: string, cafePhone: string, bookingId: number, language?: string) => Promise<boolean>;
+export declare const sendBookingCancellationEmail: (userEmail: string, userName: string, cafeName: string, bookingId: number, language?: string) => Promise<boolean>;
+export declare const sendBookingStatusUpdateEmailToCustomer: (userEmail: string, userName: string, cafeName: string, bookingDate: string, bookingTime: string, numberOfPeople: number, status: "confirmed" | "approved" | "rejected", bookingId: number, language?: string) => Promise<boolean>;
+export declare const sendBookingStatusUpdateEmail: (ownerEmail: string, ownerName: string, customerName: string, cafeName: string, bookingDate: string, bookingTime: string, numberOfPeople: number, status: string, language?: string) => Promise<boolean>;
+//# sourceMappingURL=email.service.d.ts.map
