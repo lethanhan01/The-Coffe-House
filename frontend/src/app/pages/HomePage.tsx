@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { TopBar } from '../components/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -170,7 +171,9 @@ export default function HomePage() {
         callAPINearbyCafes(nearbyRadiusKm);
       }
     } catch (error) {
-      // setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
+      console.error('Search failed:', error);
+      toast.error(language === 'jp' ? '検索に失敗しました' : 'Tìm kiếm thất bại, vui lòng thử lại');
+      setFilteredCafes([]);
     }
   };
   function callAPINearbyCafes(radiusKm: number) {
