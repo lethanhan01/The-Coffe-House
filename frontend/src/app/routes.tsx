@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { type ReactNode } from 'react';
+import { AdminProvider } from './contexts/AdminContext';
 import { useAuth, type User } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -97,7 +98,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <ProtectedRoute allowedRoles={[3]}><AdminLayout /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={[3]}><AdminProvider><AdminLayout /></AdminProvider></ProtectedRoute>,
     children: [
       {
         path: '',
