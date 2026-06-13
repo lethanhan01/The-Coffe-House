@@ -397,15 +397,6 @@ export default function HomePage() {
       {/* Filter Dialog */}
       <Dialog open={showFilter} onOpenChange={setShowFilter}>
         <DialogContent aria-describedby={undefined}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4"
-            onClick={() => setShowFilter(false)}
-          >
-            <X className="size-4" />
-          </Button>
-
           <DialogHeader>
             <DialogTitle>{t('filter')}</DialogTitle>
           </DialogHeader>

@@ -18,6 +18,9 @@ export default function MapView({
   onLocationChange
 }: MapViewProps) {
   const { language } = useLanguage();
+  const locationErrorMessage = language === 'jp'
+    ? '現在地を取得できません。ブラウザで位置情報の許可をオンにしてください。'
+    : 'Không thể lấy vị trí của bạn. Vui lòng bật định vị trong trình duyệt.';
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -245,7 +248,7 @@ export default function MapView({
       <div ref={containerRef} className="w-full h-full z-0" />
       {locationError && (
         <div className="absolute bottom-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 rounded-b z-10">
-          Không thể lấy vị trí của bạn. Vui lòng bật định vị trong trình duyệt.
+          {locationErrorMessage}
         </div>
       )}
     </div>
