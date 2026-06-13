@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+import { API_URL, getHeaders } from './apiClient';
 
 export interface BookingData {
   user_id: number;
@@ -20,24 +20,6 @@ export interface BookingResponse {
   message: string;
   data?: Booking;
 }
-
-// Helper function to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('token');
-};
-
-// Helper function to get headers with auth
-const getHeaders = (contentType = true) => {
-  const headers: HeadersInit = {};
-  if (contentType) {
-    headers['Content-Type'] = 'application/json';
-  }
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
 
 // 1. Create a new booking
 export const createBooking = async (bookingData: BookingData): Promise<Booking | null> => {
