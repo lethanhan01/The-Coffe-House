@@ -93,8 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         if (!(error instanceof Error && error.name === 'AbortError')) {
-          // Network failure during background validation: keep cached user.
-          // The next successful API call will refresh the cache.
+          console.error('Auth token validation failed (network error):', error);
+          // Keep cached user on network failure — offline-tolerant behavior.
         }
       } finally {
         setIsLoading(false);
@@ -154,10 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = async (data: Partial<User>) => {
-    if (!user) return;
+    if (!user || !localStorage.getItem('token')) return; // no-op: impossible in normal flow
 
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    const token = localStorage.getItem('token') as string;
 
     const payload = {
       full_name: data.name,
@@ -185,10 +184,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteAccount = async () => {
-    if (!user) return;
+    if (!user || !localStorage.getItem('token')) return; // no-op: impossible in normal flow
 
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    const token = localStorage.getItem('token') as string;
 
     const response = await fetch(`${API_URL}/auth/me`, {
       method: 'DELETE',
