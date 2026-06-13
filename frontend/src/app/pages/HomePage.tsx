@@ -196,12 +196,14 @@ export default function HomePage() {
           } catch (error) {
 
             console.error(error);
+            toast.error(language === 'jp' ? 'カフェの読み込みに失敗しました' : 'Không thể tải danh sách quán cà phê');
           }
         },
 
         (error) => {
 
           console.log(error.message);
+          toast.error(language === 'jp' ? '位置情報が取得できませんでした' : 'Không thể lấy vị trí của bạn');
         },
 
         {
