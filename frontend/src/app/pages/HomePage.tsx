@@ -86,8 +86,8 @@ const mapBackendCafe = (cafe: BackendCafe): Cafe => ({
   rating: cafe.average_rating ?? 0,
   reviewCount: cafe.review_count ?? 0,
   images: [cafe.cover_image_url || DEFAULT_CAFE_IMAGE],
-  lat: Number(cafe.lat) ?? cafe.latitude ?? 0,
-  lng: Number(cafe.lon) ?? cafe.longitude ?? 0,
+  lat: (() => { const v = Number(cafe.lat ?? cafe.latitude); return isNaN(v) ? 0 : v; })(),
+  lng: (() => { const v = Number(cafe.lon ?? cafe.longitude); return isNaN(v) ? 0 : v; })(),
 });
 
 const applyCafeFilters = (items: Cafe[], keywordValue: string, filterValue: CafeFilters) => {
