@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+import { API_URL, getHeaders } from './apiClient';
 
 // Helper function to format date safely
 export const formatPromotionDate = (dateString: string, language: 'jp' | 'vn' = 'vn'): string => {
@@ -58,24 +58,6 @@ export interface PromotionResponse {
   message?: string;
   data?: Promotion | Promotion[];
 }
-
-// Helper function to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('token');
-};
-
-// Helper function to get headers with auth
-const getHeaders = (contentType = true) => {
-  const headers: HeadersInit = {};
-  if (contentType) {
-    headers['Content-Type'] = 'application/json';
-  }
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
 
 // 1. Create a new promotion
 export const createPromotion = async (promotionData: PromotionData): Promise<Promotion | null> => {

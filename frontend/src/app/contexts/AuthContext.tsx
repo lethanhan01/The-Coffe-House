@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface User {
-  id: string; // Wait, our backend uses number for ID, but let's keep string to be safe or convert it.
+  id: string;
   email: string;
   name: string;
-  role: 1 | 2 | 3 | 4; // 1: Customer, 2: Owner, 3: Admin, 4: Staff
+  role: 1 | 2 | 3 | 4;
   avatar?: string;
   phone?: string;
   language?: 'vn' | 'jp';
@@ -16,19 +16,42 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User | null>;
   register: (data: Omit<User, 'id'> & { password?: string; language?: 'vn' | 'jp' }) => Promise<boolean>;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
-  deleteAccount: () => void;
+  updateUser: (data: Partial<User>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+const SESSION_KEY = 'auth_user';
+
+function readCachedUser(): User | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedUser(user: User): void {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  } catch {
+    // sessionStorage quota exceeded — not fatal
+  }
+}
+
+function clearCachedUser(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedUser = readCachedUser();
+  const [user, setUser] = useState<User | null>(cachedUser);
+  // Skip spinner when we have a cached user; validate token in background.
+  const [isLoading, setIsLoading] = useState(cachedUser === null);
 
-  // Parse user profile from backend format to frontend format
   const formatUser = (data: any): User => ({
     id: data.id.toString(),
     email: data.email,
@@ -42,9 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const controller = new AbortController();
 
-    const fetchUser = async () => {
+    const validateToken = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
+        clearCachedUser();
+        setUser(null);
         setIsLoading(false);
         return;
       }
@@ -57,20 +82,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json();
-          setUser(formatUser(data));
+          const freshUser = formatUser(data);
+          writeCachedUser(freshUser);
+          setUser(freshUser);
         } else {
+          // Token expired or revoked — clear state, ProtectedRoute redirects to /login
           localStorage.removeItem('token');
+          clearCachedUser();
+          setUser(null);
         }
       } catch (error) {
         if (!(error instanceof Error && error.name === 'AbortError')) {
-          console.error('Failed to fetch user:', error);
+          console.error('Auth token validation failed (network error):', error);
+          // Keep cached user on network failure — offline-tolerant behavior.
         }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUser();
+    validateToken();
     return () => controller.abort();
   }, []);
 
@@ -85,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       localStorage.setItem('token', data.token);
       const formattedUser = formatUser(data.user);
+      writeCachedUser(formattedUser);
       setUser(formattedUser);
       return formattedUser;
     }
@@ -118,62 +150,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
+    clearCachedUser();
   };
 
   const updateUser = async (data: Partial<User>) => {
-    if (!user) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+    if (!user || !localStorage.getItem('token')) return; // no-op: impossible in normal flow
 
-      const payload = {
-        full_name: data.name,
-        phone_number: data.phone,
-        email: data.email
-      };
+    const token = localStorage.getItem('token') as string;
 
-      const response = await fetch(`${API_URL}/auth/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+    const payload = {
+      full_name: data.name,
+      phone_number: data.phone,
+      email: data.email
+    };
 
-      if (response.ok) {
-        const updatedData = await response.json();
-        setUser(formatUser(updatedData));
-      } else {
-        console.error('Failed to update user');
-      }
-    } catch (error) {
-      console.error('Update user error:', error);
+    const response = await fetch(`${API_URL}/auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const updatedData = await response.json();
+      const updatedUser = formatUser(updatedData);
+      writeCachedUser(updatedUser);
+      setUser(updatedUser);
+    } else {
+      throw new Error('Failed to update user');
     }
   };
 
   const deleteAccount = async () => {
-    if (!user) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+    if (!user || !localStorage.getItem('token')) return; // no-op: impossible in normal flow
 
-      const response = await fetch(`${API_URL}/auth/me`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    const token = localStorage.getItem('token') as string;
 
-      if (response.ok) {
-        logout();
-      } else {
-        console.error('Failed to delete account');
-      }
-    } catch (error) {
-      console.error('Delete account error:', error);
+    const response = await fetch(`${API_URL}/auth/me`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      logout();
+    } else {
+      throw new Error('Failed to delete account');
     }
   };
 

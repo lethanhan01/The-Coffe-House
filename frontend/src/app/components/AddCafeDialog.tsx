@@ -360,14 +360,14 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
 
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="hasCoffee"
+                  id="hasHighTables"
                   checked={amenities.hasCoffee}
                   onCheckedChange={(checked) =>
                     setAmenities({ ...amenities, hasCoffee: checked as boolean })
                   }
                 />
-                <Label htmlFor="hasCoffee" className="cursor-pointer font-normal">
-                  {t('hasCoffee')}
+                <Label htmlFor="hasHighTables" className="cursor-pointer font-normal">
+                  {t('hasHighTables')}
                 </Label>
               </div>
             </div>

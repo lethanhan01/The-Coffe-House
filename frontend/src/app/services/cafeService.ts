@@ -1,18 +1,6 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+import { API_URL, getHeaders } from './apiClient';
 
 export interface Cafe {
-  // id: number;
-  // ownerId: number;
-  // nameJp: string;
-  // nameVn: string;
-  // address: string;
-  // phoneNumber?: string | null;
-  // openHours?: string | null;
-  // isOpen: boolean;
-  // isCrowded: boolean;
-  // averageRating: number;
-  // reviewCount: number;
-  // coverImageUrl?: string | null;
   id: string;
   owner_id: string | number;
   name: string;
@@ -54,24 +42,6 @@ export interface CafeResponse {
   message?: string;
   data?: Cafe | Cafe[];
 }
-
-// Helper function to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('token');
-};
-
-// Helper function to get headers with auth
-const getHeaders = (contentType = true) => {
-  const headers: HeadersInit = {};
-  if (contentType) {
-    headers['Content-Type'] = 'application/json';
-  }
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
 
 // 1. Get all cafes
 export const getAllCafes = async (): Promise<Cafe[] | null> => {
@@ -184,27 +154,6 @@ export const createCafe = async (
     return null;
   }
 };
-// export const createCafe = async (cafeData: Partial<Cafe>): Promise<Cafe | null> => {
-//   try {
-//     const response = await fetch(`${API_URL}/cafes`, {
-//       method: 'POST',
-//       headers: getHeaders(),
-//       body: JSON.stringify(cafeData)
-//     });
-
-//     if (!response.ok) {
-//       const error = await response.json();
-//       console.error('Cafe creation failed:', error);
-//       return null;
-//     }
-
-//     const result: CafeResponse = await response.json();
-//     return (result.data as Cafe) || null;
-//   } catch (error) {
-//     console.error('Error creating cafe:', error);
-//     return null;
-//   }
-// };
 
 // 5. Update cafe (owner only)
 export interface UpdateCafeInput {

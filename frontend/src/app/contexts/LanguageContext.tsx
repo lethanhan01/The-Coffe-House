@@ -68,7 +68,7 @@ const translations: Translations = {
   hasOutlet: { jp: 'コンセントあり', vn: 'Có ổ điện' },
   noSmoking: { jp: '禁煙', vn: 'Cấm thuốc lá' },
   hasSnacks: { jp: '軽食あり', vn: 'Có đồ ăn nhẹ' },
-  hasCoffee: { jp: 'ハイテーブルあり', vn: 'Có bàn cao' },
+  hasHighTables: { jp: 'ハイテーブルあり', vn: 'Có bàn cao' },
 
   // Booking
   selectDate: { jp: '日付を選択', vn: 'Chọn ngày' },

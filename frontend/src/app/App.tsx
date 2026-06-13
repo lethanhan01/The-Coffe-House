@@ -8,7 +8,9 @@ import { Toaster } from './components/ui/sonner';
 
 export default function App() {
   useEffect(() => {
-    initializeMockData();
+    if (import.meta.env.DEV) {
+      initializeMockData();
+    }
   }, []);
 
   return (

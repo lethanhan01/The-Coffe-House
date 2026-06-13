@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { TopBar } from '../components/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -86,8 +87,8 @@ const mapBackendCafe = (cafe: BackendCafe): Cafe => ({
   rating: cafe.average_rating ?? 0,
   reviewCount: cafe.review_count ?? 0,
   images: [cafe.cover_image_url || DEFAULT_CAFE_IMAGE],
-  lat: Number(cafe.lat) ?? cafe.latitude ?? 0,
-  lng: Number(cafe.lon) ?? cafe.longitude ?? 0,
+  lat: (() => { const v = Number(cafe.lat ?? cafe.latitude); return isNaN(v) ? 0 : v; })(),
+  lng: (() => { const v = Number(cafe.lon ?? cafe.longitude); return isNaN(v) ? 0 : v; })(),
 });
 
 const applyCafeFilters = (items: Cafe[], keywordValue: string, filterValue: CafeFilters) => {
@@ -130,13 +131,6 @@ export default function HomePage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  // Temporarily disabled auth check for development
-  // useEffect(() => {
-  //   if (!user) {
-  //     navigate('/login');
-  //   }
-  // }, [user, navigate]);
-
   useEffect(() => {
     const loadPromotions = async () => {
       const activePromos = await getActivePromotions();
@@ -170,10 +164,12 @@ export default function HomePage() {
         callAPINearbyCafes(nearbyRadiusKm);
       }
     } catch (error) {
-      // setFilteredCafes(applyCafeFilters(getCafes(), keywordValue, filterValue));
+      console.error('Search failed:', error);
+      toast.error(language === 'jp' ? '検索に失敗しました' : 'Tìm kiếm thất bại, vui lòng thử lại');
+      setFilteredCafes([]);
     }
   };
-  function callAPINearbyCafes(radiusKm: number) {
+  const callAPINearbyCafes = useCallback((radiusKm: number) => {
     if ('geolocation' in navigator) {
 
       navigator.geolocation.getCurrentPosition(
@@ -200,29 +196,31 @@ export default function HomePage() {
           } catch (error) {
 
             console.error(error);
+            toast.error(language === 'jp' ? 'カフェの読み込みに失敗しました' : 'Không thể tải danh sách quán cà phê');
           }
         },
 
         (error) => {
 
           console.log(error.message);
+          toast.error(language === 'jp' ? '位置情報が取得できませんでした' : 'Không thể lấy vị trí của bạn');
         },
 
         {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
+          enableHighAccuracy: false,
+          timeout: 8000,
+          maximumAge: 300000,
         }
       );
     } else {
 
       console.log('Geolocation is not supported by this browser.');
     }
-  }
+  }, []);
   useEffect(() => {
     // On mount, load nearby cafes with the current radius
     callAPINearbyCafes(nearbyRadiusKm);
-  }, [nearbyRadiusKm]);
+  }, [nearbyRadiusKm, callAPINearbyCafes]);
 
   const clearFilters = () => {
     setFilters(defaultFilters);
@@ -239,11 +237,6 @@ export default function HomePage() {
   const handleCafeClick = (cafeId: string) => {
     navigate(`/cafe/${cafeId}`);
   };
-
-  // Temporarily disabled user check for development
-  // if (!user) {
-  //   return null;
-  // }
 
   return (
     <div className="min-h-screen bg-gray-50">

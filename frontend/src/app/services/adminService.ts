@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL as string;
+import { API_URL, getHeaders } from './apiClient';
 
 export interface AdminUser {
   id: string;
@@ -34,16 +34,6 @@ export interface AdminStats {
   totalReports: number;
   activeReports: number;
 }
-
-const getAuthToken = () => localStorage.getItem('token');
-
-const getHeaders = (contentType = true) => {
-  const headers: HeadersInit = {};
-  if (contentType) headers['Content-Type'] = 'application/json';
-  const token = getAuthToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
-};
 
 export const getAdminStats = async (): Promise<AdminStats | null> => {
   try {
