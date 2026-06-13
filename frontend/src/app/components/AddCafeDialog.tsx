@@ -367,7 +367,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
                   }
                 />
                 <Label htmlFor="hasCoffee" className="cursor-pointer font-normal">
-                  {t('hasCoffee')}
+                  {t('hasHighTables')}
                 </Label>
               </div>
             </div>

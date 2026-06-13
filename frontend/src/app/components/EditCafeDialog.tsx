@@ -242,7 +242,7 @@ export function EditCafeDialog({ open, onClose, cafe, onSubmit }: EditCafeDialog
                   }
                 />
                 <Label htmlFor="hasCoffee" className="cursor-pointer font-normal">
-                  {t('hasCoffee')}
+                  {t('hasHighTables')}
                 </Label>
               </div>
             </div>
