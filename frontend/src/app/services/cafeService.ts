@@ -1,18 +1,6 @@
 import { API_URL, getHeaders } from './apiClient';
 
 export interface Cafe {
-  // id: number;
-  // ownerId: number;
-  // nameJp: string;
-  // nameVn: string;
-  // address: string;
-  // phoneNumber?: string | null;
-  // openHours?: string | null;
-  // isOpen: boolean;
-  // isCrowded: boolean;
-  // averageRating: number;
-  // reviewCount: number;
-  // coverImageUrl?: string | null;
   id: string;
   owner_id: string | number;
   name: string;
@@ -166,27 +154,6 @@ export const createCafe = async (
     return null;
   }
 };
-// export const createCafe = async (cafeData: Partial<Cafe>): Promise<Cafe | null> => {
-//   try {
-//     const response = await fetch(`${API_URL}/cafes`, {
-//       method: 'POST',
-//       headers: getHeaders(),
-//       body: JSON.stringify(cafeData)
-//     });
-
-//     if (!response.ok) {
-//       const error = await response.json();
-//       console.error('Cafe creation failed:', error);
-//       return null;
-//     }
-
-//     const result: CafeResponse = await response.json();
-//     return (result.data as Cafe) || null;
-//   } catch (error) {
-//     console.error('Error creating cafe:', error);
-//     return null;
-//   }
-// };
 
 // 5. Update cafe (owner only)
 export interface UpdateCafeInput {

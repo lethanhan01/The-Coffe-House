@@ -131,13 +131,6 @@ export default function HomePage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  // Temporarily disabled auth check for development
-  // useEffect(() => {
-  //   if (!user) {
-  //     navigate('/login');
-  //   }
-  // }, [user, navigate]);
-
   useEffect(() => {
     const loadPromotions = async () => {
       const activePromos = await getActivePromotions();
@@ -242,11 +235,6 @@ export default function HomePage() {
   const handleCafeClick = (cafeId: string) => {
     navigate(`/cafe/${cafeId}`);
   };
-
-  // Temporarily disabled user check for development
-  // if (!user) {
-  //   return null;
-  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
