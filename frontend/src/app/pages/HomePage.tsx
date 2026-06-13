@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TopBar } from '../components/TopBar';
@@ -176,7 +176,7 @@ export default function HomePage() {
       setFilteredCafes([]);
     }
   };
-  function callAPINearbyCafes(radiusKm: number) {
+  const callAPINearbyCafes = useCallback((radiusKm: number) => {
     if ('geolocation' in navigator) {
 
       navigator.geolocation.getCurrentPosition(
@@ -221,11 +221,11 @@ export default function HomePage() {
 
       console.log('Geolocation is not supported by this browser.');
     }
-  }
+  }, []);
   useEffect(() => {
     // On mount, load nearby cafes with the current radius
     callAPINearbyCafes(nearbyRadiusKm);
-  }, [nearbyRadiusKm]);
+  }, [nearbyRadiusKm, callAPINearbyCafes]);
 
   const clearFilters = () => {
     setFilters(defaultFilters);
