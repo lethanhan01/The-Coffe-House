@@ -31,16 +31,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined;
-          if (id.includes('react-dom') || id.includes('/react/')) return 'vendor-react';
-          if (id.includes('react-router')) return 'vendor-router';
-          if (id.includes('@radix-ui')) return 'vendor-radix';
-          if (id.includes('leaflet')) return 'vendor-maps';
-          if (id.includes('recharts')) return 'vendor-charts';
-          if (id.includes('@mui') || id.includes('@emotion')) return 'vendor-mui';
-          if (id.includes('lucide-react')) return 'vendor-icons';
-          return 'vendor';
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom'],
+          'vendor-icons': ['lucide-react'],
         },
       },
     },
