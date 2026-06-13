@@ -16,8 +16,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User | null>;
   register: (data: Omit<User, 'id'> & { password?: string; language?: 'vn' | 'jp' }) => Promise<boolean>;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
-  deleteAccount: () => void;
+  updateUser: (data: Partial<User>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
