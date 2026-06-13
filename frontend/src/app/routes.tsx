@@ -18,6 +18,13 @@ import StaffHomePage from './pages/StaffHomePage';
 import StaffCafeDetailPage from './pages/StaffCafeDetailPage';
 import StaffProfilePage from './pages/StaffProfilePage';
 
+const ROLE_HOME: Record<number, string> = {
+  1: '/home',
+  2: '/owner',
+  3: '/admin',
+  4: '/staff',
+};
+
 function ProtectedRoute({
   children,
   allowedRoles,
@@ -32,7 +39,10 @@ function ProtectedRoute({
     </div>
   );
   if (!user) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) {
+    const homePath = ROLE_HOME[user.role] ?? '/login';
+    return <Navigate to={homePath} replace />;
+  }
   return <>{children}</>;
 }
 
