@@ -15,9 +15,23 @@ export const getCafes = async (req: Request, res: Response) => {
 //API: tim kiem va loc quan
 export const searchCafes = async (req: Request, res: Response) => {
     try {
-        const filters = req.query;
+        const q = req.query as Record<string, string>;
+        const filters: any = {
+            keyword:      q.keyword,
+            isOpen:       q.is_open       || q.isOpen,
+            isCrowded:    q.is_crowded    || q.isCrowded,
+            minRating:    q.min_rating    || q.minRating,
+            hasWifi:      q.has_wifi      || q.hasWifi,
+            hasAc:        q.has_ac        || q.hasAc,
+            hasOutlets:   q.has_outlets   || q.hasOutlets,
+            isNonSmoking: q.is_non_smoking || q.isNonSmoking,
+            isQuiet:      q.is_quiet      || q.isQuiet,
+            hasSnacks:    q.has_snacks    || q.hasSnacks,
+            sortBy:       q.sort_by       || q.sortBy,
+            limit:        q.limit,
+            offset:       q.offset,
+        };
 
-        // Log filters for debugging
         console.log("Search filters:", filters);
 
         const cafes = await cafeService.searchCafes(filters);

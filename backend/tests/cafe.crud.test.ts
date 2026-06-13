@@ -31,7 +31,7 @@ describe("Integration Test - Cafe CRUD API", () => {
     
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.name_vn).toBe("Integration Test Cafe");
+    expect(res.body.data.name).toBe("Integration Test Cafe");
   });
 
   // 3. UPDATE
@@ -45,8 +45,8 @@ describe("Integration Test - Cafe CRUD API", () => {
     
     // Verify update
     const getRes = await request(app).get(`/api/cafes/${newCafeId}`);
-    expect(getRes.body.data.is_open).toBe(true);
-    expect(getRes.body.data.is_crowded).toBe(true);
+    expect(getRes.body.data.isOpen).toBe(true);
+    expect(getRes.body.data.status).toBe('crowded');
   });
 
   // 4. DELETE

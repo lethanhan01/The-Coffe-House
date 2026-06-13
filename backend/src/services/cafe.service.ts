@@ -252,15 +252,17 @@ export const updateCafe = async (
     if (error) {
         throw new Error(error.message);
     }
-    const { error: amenityError } = await supabase
-        .from('amenities')
-        .update(amenities)
-        .eq('cafe_id', cafeId);
 
-    if (amenityError) {
-        throw new Error(amenityError.message);
+    if (amenities !== undefined && Object.keys(amenities).length > 0) {
+        const { error: amenityError } = await supabase
+            .from('amenities')
+            .update(amenities)
+            .eq('cafe_id', cafeId);
+
+        if (amenityError) {
+            throw new Error(amenityError.message);
+        }
     }
-
 
     return true;
 };
