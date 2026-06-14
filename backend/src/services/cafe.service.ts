@@ -1,10 +1,10 @@
 import supabase from '../utils/db';
 import { Cafe } from '../models/Cafe';
 // 1. READ: Lấy danh sách quán 
-export const getAllCafes = async () => {
-    const { data, error } = await supabase
-        .from('cafes')
-        .select('*, amenities(*), menus(*)');
+export const getAllCafes = async (limit?: number) => {
+    let query = supabase.from('cafes').select('*, amenities(*), menus(*)');
+    if (limit) query = query.limit(limit);
+    const { data, error } = await query;
 
     if (error) throw new Error(error.message);
     return (data || []).map(mapCafeFromDB);

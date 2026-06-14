@@ -4,7 +4,8 @@ import * as cafeService from '../services/cafe.service';
 //API: truy xuat tat ca quan
 export const getCafes = async (req: Request, res: Response) => {
     try {
-        const cafes = await cafeService.getAllCafes();
+        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+        const cafes = await cafeService.getAllCafes(limit);
 
         res.status(200).json({ success: true, count: cafes.length, data: cafes });
     } catch (error) {
