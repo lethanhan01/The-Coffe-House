@@ -40,6 +40,7 @@ export default function OwnerCafeDetailPage() {
   const [showDeleteRequestDialog, setShowDeleteRequestDialog] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteSubmitted, setDeleteSubmitted] = useState(false);
+  const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const { user } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -199,6 +200,7 @@ export default function OwnerCafeDetailPage() {
   };
 
   const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'rejected') => {
+    setProcessingBookingId(bookingId);
     try {
       const backendStatus = action === 'confirmed' ? 'approved' : action;
       const updatedBooking = await updateBookingStatus(parseInt(bookingId, 10), backendStatus);
@@ -212,6 +214,8 @@ export default function OwnerCafeDetailPage() {
     } catch (error) {
       console.error('Lỗi khi cập nhật trạng thái booking:', error);
       alert(language === 'jp' ? '更新に失敗しました。もう一度お試しください。' : 'Cập nhật trạng thái thất bại, vui lòng thử lại.');
+    } finally {
+      setProcessingBookingId(null);
     }
   };
 
@@ -607,6 +611,7 @@ export default function OwnerCafeDetailPage() {
                             variant="outline"
                             size="sm"
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            disabled={processingBookingId === booking.id}
                             onClick={() => handleBookingAction(booking.id, 'confirmed')}
                           >
                             {language === 'jp' ? '承認' : 'Chấp nhận'}
@@ -615,6 +620,7 @@ export default function OwnerCafeDetailPage() {
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={processingBookingId === booking.id}
                             onClick={() => handleBookingAction(booking.id, 'rejected')}
                           >
                             {language === 'jp' ? '拒否' : 'Từ chối'}

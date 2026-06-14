@@ -44,7 +44,7 @@ export const createBooking = async (req: Request, res: Response) => {
         if (userData && cafeData) {
             const cafeName = language === 'jp' ? cafeData.name_jp : cafeData.name_vn;
 
-            await emailService.sendBookingConfirmationEmail(
+            emailService.sendBookingConfirmationEmail(
                 userData.email,
                 userData.full_name,
                 cafeName,
@@ -55,7 +55,7 @@ export const createBooking = async (req: Request, res: Response) => {
                 cafeData.phone_number,
                 newBooking.id,
                 language
-            );
+            ).catch(err => console.error('Email confirmation failed:', err));
         }
 
         res.status(201).json({ 
@@ -198,7 +198,7 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
                     ? bookingData.cafes?.name_jp || bookingData.cafes?.name_vn || 'Quán Cafe'
                     : bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
 
-                await emailService.sendBookingStatusUpdateEmailToCustomer(
+                emailService.sendBookingStatusUpdateEmailToCustomer(
                     bookingData.users.email,
                     bookingData.users.full_name,
                     cafeName,
@@ -208,7 +208,7 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
                     status,
                     bookingId,
                     language
-                );
+                ).catch(err => console.error('Email status update failed:', err));
             }
         }
         
@@ -255,13 +255,13 @@ export const cancelBooking = async (req: Request, res: Response) => {
                 ? bookingData.cafes?.name_jp || bookingData.cafes?.name_vn || 'Quán Cafe'
                 : bookingData.cafes?.name_vn || bookingData.cafes?.name_jp || 'Quán Cafe';
 
-            await emailService.sendBookingCancellationEmail(
+            emailService.sendBookingCancellationEmail(
                 bookingData.users.email,
                 bookingData.users.full_name,
                 cafeName,
                 bookingId,
                 language
-            );
+            ).catch(err => console.error('Email cancellation failed:', err));
         }
         
         res.status(200).json({ 

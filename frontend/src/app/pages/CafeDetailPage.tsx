@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import { useAuth } from '../contexts/AuthContext';
@@ -92,7 +92,7 @@ export default function CafeDetailPage() {
 
     const fetchOtherCafes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/cafes`);
+        const response = await fetch(`${API_BASE_URL}/cafes?limit=7`);
         if (!response.ok) throw new Error('Failed');
         const result = await response.json();
         const others = (result.data || [])
@@ -125,17 +125,15 @@ export default function CafeDetailPage() {
     }
   };
 
-  const getFilteredReviews = () => {
-    let filtered = [...reviews];
-
+  const filteredReviews = useMemo(() => {
+    const copy = [...reviews];
     if (reviewFilter === 'recent') {
-      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      copy.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (reviewFilter === 'popular') {
-      filtered.sort((a, b) => b.rating - a.rating);
+      copy.sort((a, b) => b.rating - a.rating);
     }
-
-    return filtered;
-  };
+    return copy;
+  }, [reviews, reviewFilter]);
 
   const handleBookingSuccess = () => {
     setShowBooking(false);
@@ -201,6 +199,7 @@ export default function CafeDetailPage() {
               src={img}
               alt={cafe.name}
               className="w-full h-64 object-cover rounded-lg"
+              loading="lazy"
             />
           ))}
         </div>
@@ -334,10 +333,10 @@ export default function CafeDetailPage() {
 
             <TabsContent value={reviewFilter} className="mt-4">
               <div className="max-h-96 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {getFilteredReviews().length === 0 ? (
+                {filteredReviews.length === 0 ? (
                   <p className="text-center text-gray-500 py-8">No reviews yet</p>
                 ) : (
-                  getFilteredReviews().map(review => (
+                  filteredReviews.map(review => (
                     <div key={review.id} className="border-b pb-4 last:border-0">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
@@ -400,6 +399,7 @@ export default function CafeDetailPage() {
                         src={otherCafe.images[0]}
                         alt={otherCafe.name}
                         className="w-full h-40 object-cover rounded-t-lg"
+                        loading="lazy"
                       />
                       {cafePromotion && (
                         <div className="absolute top-2 right-2">

@@ -1,48 +1,20 @@
 import supabase from '../utils/db';
 
 export const getReviewsByCafeId = async (cafe_id: number) => {
-    // Lấy các review đã bị report và approved
-    const { data: reportedReviews } = await supabase
-        .from('review_reports')
-        .select('review_id')
-        .eq('status', 'approved');
+    const [reportedResult, reviewsResult] = await Promise.all([
+        supabase.from('review_reports').select('review_id').eq('status', 'approved'),
+        supabase.from('reviews')
+            .select('id, cafe_id, user_id, rating, comment, created_at, users (full_name, avatar_url), review_images (image_url)')
+            .eq('cafe_id', cafe_id)
+            .order('created_at', { ascending: false })
+    ]);
 
-    const excludedIds = reportedReviews?.map(r => r.review_id) || [];
+    if (reviewsResult.error) throw new Error(`Failed to fetch reviews: ${reviewsResult.error.message}`);
 
-    // Lấy review, loại bỏ các review trên
-    const { data, error } = await supabase
-        .from('reviews')
-        .select(`
-        id,
-        cafe_id,
-        user_id,
-        rating,
-        comment,
-        created_at,
-        users (full_name, avatar_url),
-        review_images (image_url)
-    `)
-        .eq('cafe_id', cafe_id)
-        .not('id', 'in', `(${excludedIds.join(',')})`)
-        .order('created_at', { ascending: false });
-    // const { data, error } = await supabase
-    //     .from('reviews')
-    //     .select(`
-    //         id,
-    //         cafe_id,
-    //         user_id,
-    //         rating,
-    //         comment,
-    //         created_at,
-    //         users (full_name, avatar_url),
-    //         review_images (image_url)
-    //     `)
-    //     .eq('cafe_id', cafe_id)
-    //     .order('created_at', { ascending: false });
+    const excludedIds = new Set((reportedResult.data || []).map((r: any) => r.review_id));
+    const filtered = (reviewsResult.data || []).filter((r: any) => !excludedIds.has(r.id));
 
-    if (error) throw new Error(`Failed to fetch reviews: ${error.message}`);
-
-    return (data || []).map((r: any) => ({
+    return filtered.map((r: any) => ({
         id: r.id,
         cafe_id: r.cafe_id,
         user_id: r.user_id,
