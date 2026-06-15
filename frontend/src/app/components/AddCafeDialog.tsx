@@ -76,7 +76,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
     }
 
     try {
-      const url = `https://mapapis.openmap.vn/v1/autocomplete?text=${encodeURIComponent(keyword)}&apikey=${API_KEY}`;
+      const url = `https://mapapis.ndamaps.vn/v1/autocomplete?text=${encodeURIComponent(keyword)}&apikey=${API_KEY}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -98,7 +98,7 @@ export function AddCafeDialog({ open, onClose, onSubmit }: AddCafeDialogProps) {
   // 2. API Place Detail kèm API Key
   async function fetchPlaceDetail(placeId: string) {
     try {
-      const url = `https://mapapis.openmap.vn/v1/place?ids=${placeId}&format=google&apikey=${API_KEY}`;
+      const url = `https://mapapis.ndamaps.vn/v1/place?ids=${placeId}&format=google&apikey=${API_KEY}`;
       const response = await fetch(url);
       const data = await response.json();
 
