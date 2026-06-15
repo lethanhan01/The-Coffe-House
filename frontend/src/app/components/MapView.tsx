@@ -25,6 +25,7 @@ export default function MapView({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Default center on Hanoi
   const defaultCenter: [number, number] = [105.85361, 21.028333];
@@ -35,6 +36,7 @@ export default function MapView({
 
     const apiKey = import.meta.env.VITE_OPENMAP_API_KEY;
     if (!apiKey) {
+      setMapError('VITE_OPENMAP_API_KEY is not configured');
       console.error('OpenMapVN API key not found in environment variables');
       return;
     }
@@ -45,6 +47,11 @@ export default function MapView({
       style: `https://maptiles.openmap.vn/styles/day-v1/style.json?apikey=${apiKey}`,
       center: defaultCenter,
       zoom: 15,
+    });
+
+    map.on('error', (e) => {
+      console.error('Map tile error:', e.error);
+      setMapError(`Map failed to load: ${e.error?.message ?? 'unknown error'}`);
     });
 
     mapRef.current = map;
@@ -242,6 +249,19 @@ export default function MapView({
       });
     }
   }, [cafes, userLocation, language, onCafeClick]);
+
+  if (mapError) {
+    return (
+      <div className={`${height} rounded-lg overflow-hidden shadow-md relative z-0 flex items-center justify-center bg-gray-100`}>
+        <div className="text-center p-6">
+          <p className="text-gray-500 text-sm">
+            {language === 'jp' ? 'マップを読み込めません' : 'Không thể tải bản đồ'}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">{mapError}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${height} rounded-lg overflow-hidden shadow-md relative z-0`}>
