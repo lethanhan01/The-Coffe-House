@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,7 +17,7 @@ const transporter = nodemailer.createTransport({
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000
-});
+} as SMTPTransport.Options);
 
 // Verify email configuration
 transporter.verify((error, success) => {
