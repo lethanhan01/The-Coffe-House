@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -8,6 +9,7 @@ const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
+    family: 4, // force IPv4 — Render blocks outbound IPv6 on SMTP
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
@@ -15,7 +17,7 @@ const transporter = nodemailer.createTransport({
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000
-});
+} as SMTPTransport.Options);
 
 // Verify email configuration
 transporter.verify((error, success) => {
