@@ -23,6 +23,7 @@ export default function MapView({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
  
   // Default center on Hanoi
   const defaultCenter: [number, number] = [105.85361, 21.028333];
@@ -33,7 +34,7 @@ export default function MapView({
  
     const apiKey = import.meta.env.VITE_OPENMAP_API_KEY;
     if (!apiKey) {
-      console.error('OpenMapVN API key not found in environment variables');
+      setMapError('OpenMapVN API key not configured');
       return;
     }
  
