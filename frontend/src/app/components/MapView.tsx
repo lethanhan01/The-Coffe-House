@@ -40,7 +40,7 @@ export default function MapView({
     // Create MapLibre GL map
     const map = new ndamapgl.Map({
       container: containerRef.current,
-      style: https://maptiles.openmap.vn/styles/day-v2/style.json?apikey=${apiKey},
+      style: `https://maptiles.openmap.vn/styles/day-v2/style.json?apikey=${apiKey}`,
       center: defaultCenter,
       zoom: 15,
     });
