@@ -112,38 +112,14 @@ export default function MapView({
  
     // Add user location marker
     if (userLocation) {
-      const el = document.createElement('div');
-      el.className = 'user-marker';
-      el.style.cssText = `
-        width: 24px;
-        height: 24px;
-        background-color: #ef4444;
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-      `;
- 
-      const innerDot = document.createElement('div');
-      innerDot.style.cssText = `
-        width: 4px;
-        height: 4px;
-        background-color: white;
-        border-radius: 50%;
-      `;
-      el.appendChild(innerDot);
- 
       const popup = new ndamapgl.Popup({ offset: 25 }).setHTML(
-        <div class="w-32"><h3 class="font-bold text-sm">Vị trí của bạn</h3><p class="text-xs text-gray-600">${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}</p></div>
+        `<div style="min-width:120px"><strong style="font-size:13px">Vị trí của bạn</strong><p style="font-size:11px;color:#666;margin:4px 0 0">${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}</p></div>`
       );
- 
-      new ndamapgl.Marker(el)
+
+      new ndamapgl.Marker({ color: '#ef4444' })
         .setLngLat(userLocation)
         .setPopup(popup)
-        .addTo(mapRef.current);
+        .addTo(mapRef.current!);
     }
  
     // Get today's day name for opening hours
