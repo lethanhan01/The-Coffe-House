@@ -117,10 +117,10 @@ export default function MapView({
       el.style.cssText = `
         width: 24px;
         height: 24px;
-        background-color: #3b82f6;
+        background-color: #ef4444;
         border: 3px solid white;
         border-radius: 50%;
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -200,14 +200,14 @@ export default function MapView({
       markerEl.style.cssText = `
         width: 32px;
         height: 32px;
-        background-color: #ef4444;
+        background-color: #3b82f6;
         border: 2px solid white;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         font-size: 18px;
       `;
       markerEl.innerHTML = '☕';

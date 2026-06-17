@@ -1,23 +1,33 @@
-import { Resend } from 'resend';
+import axios from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'The Coffee House <onboarding@resend.dev>';
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 const sendEmail = async (to: string, subject: string, html: string): Promise<boolean> => {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.BREVO_API_KEY;
     if (!apiKey) {
-        console.warn('RESEND_API_KEY not set — skipping email send');
+        console.warn('BREVO_API_KEY not set — skipping email send');
         return false;
     }
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({ from: FROM_EMAIL, to: [to], subject, html });
-    if (error) {
-        console.error('✗ Failed to send email:', error);
+    try {
+        await axios.post(
+            BREVO_API_URL,
+            {
+                sender: { name: 'The Coffee House', email: process.env.BREVO_SENDER_EMAIL },
+                to: [{ email: to }],
+                subject,
+                htmlContent: html,
+            },
+            { headers: { 'api-key': apiKey, 'content-type': 'application/json' } }
+        );
+        console.log('✓ Email sent successfully');
+        return true;
+    } catch (error: any) {
+        console.error('✗ Failed to send email:', error?.response?.data || error?.message);
         return false;
     }
-    return true;
 };
 
 // HTML Email Template for Booking Confirmation (Vietnamese)
