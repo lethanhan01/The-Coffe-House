@@ -15,7 +15,6 @@
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
-    "@types/nodemailer": "^8.0.0",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "cors": "2.8.6",
@@ -23,7 +22,7 @@
     "express": "5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
-    "nodemailer": "^8.0.7",
+    "resend": "^6.12.4",
     "ws": "^8.21.0"
   },
   "devDependencies": {
